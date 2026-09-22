@@ -52,6 +52,10 @@ class PokerRepository(
         sessionDao.update(session.copy(isDeleted = true, updatedAt = Instant.now()))
     }
 
+    suspend fun deleteSession(session: SessionEntity) {
+        sessionDao.update(session.copy(isDeleted = true, updatedAt = Instant.now()))
+    }
+
     suspend fun addEntry(
         sessionId: String,
         playerId: String,

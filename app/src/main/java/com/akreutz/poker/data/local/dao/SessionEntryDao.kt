@@ -34,7 +34,8 @@ interface SessionEntryDao {
                SUM(e.cashOutCents - e.buyInCents) AS totalDeltaCents
         FROM session_entries e
         JOIN players p ON p.id = e.playerId
-        WHERE e.isDeleted = 0 AND p.isDeleted = 0
+        JOIN sessions s ON s.id = e.sessionId
+        WHERE e.isDeleted = 0 AND p.isDeleted = 0 AND s.isDeleted = 0
         GROUP BY p.id
         ORDER BY totalDeltaCents DESC
         """

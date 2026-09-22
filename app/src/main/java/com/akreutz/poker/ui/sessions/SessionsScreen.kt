@@ -39,7 +39,10 @@ fun SessionsScreen(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         itemsIndexed(sessions, key = { _, session -> session.session.id }) { _, session ->
-            SessionCard(session)
+            SessionCard(
+                sessionWithEntries = session,
+                onDelete = { viewModel.deleteSession(session.session) },
+            )
         }
     }
 }
