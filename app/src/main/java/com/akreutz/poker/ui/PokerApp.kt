@@ -1,10 +1,7 @@
 package com.akreutz.poker.ui
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -14,6 +11,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -21,7 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.akreutz.poker.navigation.PokerDestination
-import com.akreutz.poker.ui.home.HomeScreen
+import com.akreutz.poker.ui.home.OverviewScreen
 import com.akreutz.poker.ui.sessions.SessionsScreen
 import com.akreutz.poker.ui.stats.StatsScreen
 
@@ -33,20 +31,11 @@ fun PokerApp() {
     val currentDestination = backStackEntry?.destination
     val currentTab = PokerDestination.entries.firstOrNull { destination ->
         currentDestination?.hierarchy?.any { it.route == destination.route } == true
-    } ?: PokerDestination.Home
+    } ?: PokerDestination.Overview
 
     Scaffold(
         topBar = {
             TopAppBar(title = { Text(currentTab.label) })
-        },
-        floatingActionButton = {
-            if (currentTab == PokerDestination.Home) {
-                ExtendedFloatingActionButton(
-                    onClick = { /* TODO: start new session */ },
-                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                    text = { Text("Start new session") },
-                )
-            }
         },
         bottomBar = {
             NavigationBar {
@@ -62,7 +51,14 @@ fun PokerApp() {
                                 restoreState = true
                             }
                         },
-                        icon = { Icon(destination.icon, contentDescription = destination.label) },
+                        icon = {
+                            val iconRes = destination.iconRes
+                            if (iconRes != null) {
+                                Icon(painterResource(iconRes), contentDescription = destination.label)
+                            } else {
+                                Icon(destination.icon!!, contentDescription = destination.label)
+                            }
+                        },
                         label = { Text(destination.label) }
                     )
                 }
@@ -71,10 +67,10 @@ fun PokerApp() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = PokerDestination.Home.route,
+            startDestination = PokerDestination.Overview.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(PokerDestination.Home.route) { HomeScreen() }
+            composable(PokerDestination.Overview.route) { OverviewScreen() }
             composable(PokerDestination.Stats.route) { StatsScreen() }
             composable(PokerDestination.Sessions.route) { SessionsScreen() }
         }

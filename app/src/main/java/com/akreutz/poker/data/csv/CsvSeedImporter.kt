@@ -6,6 +6,7 @@ import com.akreutz.poker.data.local.AppDatabase
 import com.akreutz.poker.data.local.entity.PlayerEntity
 import com.akreutz.poker.data.local.entity.SessionEntity
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
+import com.akreutz.poker.data.local.entity.SessionStatus
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -62,6 +63,7 @@ class CsvSeedImporter(
                     if (session == null) {
                         session = SessionEntity(
                             date = date,
+                            status = SessionStatus.CONCLUDED,
                             createdAt = Instant.now(),
                             updatedAt = Instant.now(),
                         )

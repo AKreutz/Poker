@@ -1,6 +1,7 @@
 package com.akreutz.poker.data.local
 
 import androidx.room.TypeConverter
+import com.akreutz.poker.data.local.entity.SessionStatus
 import java.time.Instant
 import java.time.LocalDate
 
@@ -16,4 +17,10 @@ class Converters {
 
     @TypeConverter
     fun instantToEpochMilli(instant: Instant?): Long? = instant?.toEpochMilli()
+
+    @TypeConverter
+    fun fromSessionStatusName(value: String?): SessionStatus? = value?.let(SessionStatus::valueOf)
+
+    @TypeConverter
+    fun sessionStatusToName(status: SessionStatus?): String? = status?.name
 }

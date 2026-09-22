@@ -14,7 +14,7 @@ import com.akreutz.poker.data.local.entity.SessionEntryEntity
 
 @Database(
     entities = [PlayerEntity::class, SessionEntity::class, SessionEntryEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -32,7 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "poker.db",
-                ).build().also { instance = it }
+                ).fallbackToDestructiveMigration(dropAllTables = true).build().also { instance = it }
             }
     }
 }

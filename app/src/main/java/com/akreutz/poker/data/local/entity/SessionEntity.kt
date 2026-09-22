@@ -10,6 +10,7 @@ import java.util.UUID
 data class SessionEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val date: LocalDate,
+    val status: SessionStatus = SessionStatus.OPEN,
     val createdAt: Instant,
     val updatedAt: Instant,
     val isDeleted: Boolean = false,

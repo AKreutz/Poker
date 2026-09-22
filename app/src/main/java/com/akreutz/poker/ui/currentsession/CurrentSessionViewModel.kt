@@ -1,0 +1,88 @@
+package com.akreutz.poker.ui.currentsession
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.akreutz.poker.data.local.entity.PlayerEntity
+import com.akreutz.poker.data.local.entity.SessionEntryEntity
+import com.akreutz.poker.data.model.SessionWithEntries
+import com.akreutz.poker.data.repository.PokerRepository
+import java.time.LocalDate
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+class CurrentSessionViewModel(private val repository: PokerRepository) : ViewModel() {
+    val openSession: StateFlow<SessionWithEntries?> = repository.observeOpenSession()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = null,
+        )
+
+    val players: StateFlow<List<PlayerEntity>> = repository.observeActivePlayers()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList(),
+        )
+
+    private val _showPlayerSelection = MutableStateFlow(false)
+    val showPlayerSelection: StateFlow<Boolean> = _showPlayerSelection.asStateFlow()
+
+    fun startSession() {
+        viewModelScope.launch {
+            repository.createSession(LocalDate.now())
+            _showPlayerSelection.value = true
+        }
+    }
+
+    fun confirmPlayerSelection(selectedPlayerIds: Set<String>, buyInCents: Long) {
+        val sessionId = openSession.value?.session?.id ?: return
+        viewModelScope.launch {
+            selectedPlayerIds.forEach { playerId ->
+                repository.addEntry(
+                    sessionId = sessionId,
+                    playerId = playerId,
+                    buyInCents = buyInCents,
+                    cashOutCents = 0,
+                )
+            }
+            _showPlayerSelection.value = false
+        }
+    }
+
+    fun dismissPlayerSelection() {
+        _showPlayerSelection.value = false
+    }
+
+    fun increaseBuyIn(entry: SessionEntryEntity, additionalCents: Long) {
+        viewModelScope.launch {
+            repository.updateEntry(entry.copy(buyInCents = entry.buyInCents + additionalCents))
+        }
+    }
+
+    fun concludeSession() {
+        val session = openSession.value?.session ?: return
+        viewModelScope.launch {
+            repository.concludeSession(session)
+        }
+    }
+
+    fun cancelSession() {
+        val session = openSession.value?.session ?: return
+        viewModelScope.launch {
+            repository.cancelSession(session)
+        }
+    }
+
+    class Factory(private val repository: PokerRepository) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return CurrentSessionViewModel(repository) as T
+        }
+    }
+}

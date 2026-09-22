@@ -6,6 +6,7 @@ import com.akreutz.poker.data.local.dao.SessionEntryDao
 import com.akreutz.poker.data.local.entity.PlayerEntity
 import com.akreutz.poker.data.local.entity.SessionEntity
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
+import com.akreutz.poker.data.local.entity.SessionStatus
 import com.akreutz.poker.data.model.PlayerTotals
 import com.akreutz.poker.data.model.SessionWithEntries
 import java.time.Instant
@@ -17,10 +18,13 @@ class PokerRepository(
     private val sessionDao: SessionDao,
     private val sessionEntryDao: SessionEntryDao,
 ) {
-    fun observeActivePlayers(): Flow<List<PlayerEntity>> = playerDao.observeActivePlayers()
+    fun observeActivePlayers(): Flow<List<PlayerEntity>> = playerDao.observeActivePlayersBySessionsPlayed()
 
     fun observeSessionsWithEntries(): Flow<List<SessionWithEntries>> =
         sessionDao.observeSessionsWithEntries()
+
+    fun observeOpenSession(): Flow<SessionWithEntries?> =
+        sessionDao.observeSessionWithEntriesByStatus(SessionStatus.OPEN)
 
     fun observeAllTimePlayerTotals(): Flow<List<PlayerTotals>> =
         sessionEntryDao.observeAllTimePlayerTotals()
@@ -35,9 +39,17 @@ class PokerRepository(
 
     suspend fun createSession(date: LocalDate): SessionEntity {
         val now = Instant.now()
-        val session = SessionEntity(date = date, createdAt = now, updatedAt = now)
+        val session = SessionEntity(date = date, status = SessionStatus.OPEN, createdAt = now, updatedAt = now)
         sessionDao.insert(session)
         return session
+    }
+
+    suspend fun concludeSession(session: SessionEntity) {
+        sessionDao.update(session.copy(status = SessionStatus.CONCLUDED, updatedAt = Instant.now()))
+    }
+
+    suspend fun cancelSession(session: SessionEntity) {
+        sessionDao.update(session.copy(isDeleted = true, updatedAt = Instant.now()))
     }
 
     suspend fun addEntry(

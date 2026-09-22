@@ -18,8 +18,20 @@ interface PlayerDao {
     @Update
     suspend fun update(player: PlayerEntity)
 
-    @Query("SELECT * FROM players WHERE isDeleted = 0 ORDER BY name COLLATE NOCASE")
-    fun observeActivePlayers(): Flow<List<PlayerEntity>>
+    @Query(
+        """
+        SELECT p.* FROM players p
+        LEFT JOIN (
+            SELECT playerId, COUNT(*) AS sessionsPlayed
+            FROM session_entries
+            WHERE isDeleted = 0
+            GROUP BY playerId
+        ) e ON e.playerId = p.id
+        WHERE p.isDeleted = 0
+        ORDER BY COALESCE(e.sessionsPlayed, 0) DESC, p.name COLLATE NOCASE
+        """
+    )
+    fun observeActivePlayersBySessionsPlayed(): Flow<List<PlayerEntity>>
 
     @Query("SELECT * FROM players WHERE name = :name AND isDeleted = 0 LIMIT 1")
     suspend fun findByName(name: String): PlayerEntity?
