@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -54,11 +55,12 @@ fun SessionCard(
             .animateContentSize(),
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded },
+                    .clickable { expanded = !expanded }
+                    .padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -81,8 +83,10 @@ fun SessionCard(
             }
 
             if (expanded) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                SessionEntriesList(sessionWithEntries)
+                HorizontalDivider()
+                Column(modifier = Modifier.padding(bottom = 16.dp, top = 8.dp)) {
+                    SessionEntriesList(sessionWithEntries)
+                }
             }
         }
     }
@@ -139,17 +143,33 @@ private fun SessionEntriesList(sessionWithEntries: SessionWithEntries) {
                 text = entryWithPlayer.player.name,
                 style = MaterialTheme.typography.bodyMedium,
             )
-            val delta = entryWithPlayer.entry.deltaCents
-            Text(
-                text = formatCents(delta),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = when {
+            val entry = entryWithPlayer.entry
+            val delta = entry.deltaCents
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "${formatCents(entry.buyInCents)} → ${formatCents(entry.cashOutCents)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                val deltaColor = when {
                     delta > 0 -> Color(0xFF2E7D32)
                     delta < 0 -> MaterialTheme.colorScheme.error
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            )
+                }
+                Text(
+                    text = "  ${if (delta < 0) "-" else " "}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = deltaColor,
+                    modifier = Modifier.width(14.dp),
+                )
+                Text(
+                    text = formatCents(kotlin.math.abs(delta)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = deltaColor,
+                )
+            }
         }
     }
 }
