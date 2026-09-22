@@ -8,6 +8,7 @@ import com.akreutz.poker.data.local.entity.SessionEntity
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
 import com.akreutz.poker.data.local.entity.SessionStatus
 import com.akreutz.poker.data.model.PlayerTotals
+import com.akreutz.poker.data.model.PlayerWithSessionCount
 import com.akreutz.poker.data.model.SessionWithEntries
 import java.time.Instant
 import java.time.LocalDate
@@ -19,6 +20,9 @@ class PokerRepository(
     private val sessionEntryDao: SessionEntryDao,
 ) {
     fun observeActivePlayers(): Flow<List<PlayerEntity>> = playerDao.observeActivePlayersBySessionsPlayed()
+
+    fun observeActivePlayersWithSessionCount(): Flow<List<PlayerWithSessionCount>> =
+        playerDao.observeActivePlayersWithSessionCount()
 
     fun observeSessionsWithEntries(): Flow<List<SessionWithEntries>> =
         sessionDao.observeSessionsWithEntries()

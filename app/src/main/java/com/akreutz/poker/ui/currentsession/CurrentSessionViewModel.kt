@@ -3,8 +3,8 @@ package com.akreutz.poker.ui.currentsession
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.akreutz.poker.data.local.entity.PlayerEntity
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
+import com.akreutz.poker.data.model.PlayerWithSessionCount
 import com.akreutz.poker.data.model.SessionWithEntries
 import com.akreutz.poker.data.repository.PokerRepository
 import java.time.LocalDate
@@ -23,7 +23,7 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
             initialValue = null,
         )
 
-    val players: StateFlow<List<PlayerEntity>> = repository.observeActivePlayers()
+    val players: StateFlow<List<PlayerWithSessionCount>> = repository.observeActivePlayersWithSessionCount()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -59,7 +59,13 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
     }
 
     fun dismissPlayerSelection() {
+        val session = openSession.value?.session
         _showPlayerSelection.value = false
+        if (session != null) {
+            viewModelScope.launch {
+                repository.cancelSession(session)
+            }
+        }
     }
 
     fun increaseBuyIn(entry: SessionEntryEntity, additionalCents: Long) {

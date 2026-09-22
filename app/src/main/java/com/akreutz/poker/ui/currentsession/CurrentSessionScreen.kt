@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,9 +13,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,8 +44,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akreutz.poker.PokerApplication
-import com.akreutz.poker.data.local.entity.PlayerEntity
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
+import com.akreutz.poker.data.model.PlayerWithSessionCount
 import com.akreutz.poker.data.model.SessionEntryWithPlayer
 import com.akreutz.poker.data.model.SessionWithEntries
 import com.akreutz.poker.ui.common.formatCents
@@ -333,13 +339,18 @@ private const val DEFAULT_BUY_IN_CENTS = 400L
 
 @Composable
 private fun PlayerSelectionDialog(
-    players: List<PlayerEntity>,
+    players: List<PlayerWithSessionCount>,
     onConfirm: (Set<String>, Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var selectedPlayerIds by remember { mutableStateOf(emptySet<String>()) }
     var buyInText by remember { mutableStateOf(formatCents(DEFAULT_BUY_IN_CENTS)) }
+    var showAllPlayers by remember { mutableStateOf(false) }
     val buyInCents = parseCentsInput(buyInText)
+
+    val frequentPlayers = players.filter { it.sessionsPlayed > 2 }
+    val infrequentPlayers = players.filter { it.sessionsPlayed <= 2 }
+    val visiblePlayers = if (showAllPlayers) players else frequentPlayers
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -349,20 +360,43 @@ private fun PlayerSelectionDialog(
                 if (players.isEmpty()) {
                     Text("No players yet")
                 } else {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        players.forEach { player ->
-                            val selected = player.id in selectedPlayerIds
-                            FilterChip(
-                                selected = selected,
-                                onClick = {
-                                    selectedPlayerIds = if (selected) {
-                                        selectedPlayerIds - player.id
-                                    } else {
-                                        selectedPlayerIds + player.id
-                                    }
-                                },
-                                label = { Text(player.name) },
-                            )
+                    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            visiblePlayers.forEach { playerWithCount ->
+                                val player = playerWithCount.player
+                                val selected = player.id in selectedPlayerIds
+                                FilterChip(
+                                    selected = selected,
+                                    onClick = {
+                                        selectedPlayerIds = if (selected) {
+                                            selectedPlayerIds - player.id
+                                        } else {
+                                            selectedPlayerIds + player.id
+                                        }
+                                    },
+                                    label = { Text(player.name) },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = if (selected) Icons.Filled.Check else Icons.Filled.Person,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(FilterChipDefaults.IconSize),
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                        if (infrequentPlayers.isNotEmpty()) {
+                            TextButton(
+                                onClick = { showAllPlayers = !showAllPlayers },
+                                contentPadding = PaddingValues(vertical = 0.dp, horizontal = 8.dp),
+                            ) {
+                                Text(if (showAllPlayers) "Show less" else "Show more")
+                                Icon(
+                                    imageVector = if (showAllPlayers) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
                         }
                     }
                 }
