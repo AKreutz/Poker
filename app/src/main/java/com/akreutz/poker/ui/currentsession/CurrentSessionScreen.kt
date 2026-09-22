@@ -53,6 +53,7 @@ fun CurrentSessionScreen(modifier: Modifier = Modifier) {
     )
     val openSession by viewModel.openSession.collectAsState()
     val showPlayerSelection by viewModel.showPlayerSelection.collectAsState()
+    val showConcludeDialog by viewModel.showConcludeDialog.collectAsState()
     val players by viewModel.players.collectAsState()
 
     if (showPlayerSelection) {
@@ -61,6 +62,16 @@ fun CurrentSessionScreen(modifier: Modifier = Modifier) {
             onConfirm = { selectedIds, buyInCents -> viewModel.confirmPlayerSelection(selectedIds, buyInCents) },
             onDismiss = { viewModel.dismissPlayerSelection() },
         )
+    }
+
+    if (showConcludeDialog) {
+        openSession?.let { session ->
+            ConcludeSessionDialog(
+                sessionWithEntries = session,
+                onConfirm = { cashOuts -> viewModel.confirmConclude(cashOuts) },
+                onDismiss = { viewModel.dismissConcludeDialog() },
+            )
+        }
     }
 
     val session = openSession
@@ -215,6 +226,99 @@ private fun AddBuyInDialog(
                 enabled = amountCents != null && amountCents > 0,
             ) {
                 Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
+}
+
+@Composable
+private fun ConcludeSessionDialog(
+    sessionWithEntries: SessionWithEntries,
+    onConfirm: (Map<String, Long>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val entries = sessionWithEntries.entries
+    var cashOutTexts by remember {
+        mutableStateOf(entries.associate { it.entry.id to "" })
+    }
+    val cashOutCentsById = entries.associate { it.entry.id to parseCentsInput(cashOutTexts[it.entry.id].orEmpty()) }
+    val allValid = entries.isNotEmpty() && cashOutCentsById.values.all { it != null }
+    val differenceCents = if (allValid) {
+        cashOutCentsById.values.sumOf { it ?: 0L } - entries.sumOf { it.entry.buyInCents }
+    } else {
+        null
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Conclude session") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Enter each player's final stack",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                entries.chunked(2).forEach { rowEntries ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        rowEntries.forEach { entryWithPlayer ->
+                            val entryId = entryWithPlayer.entry.id
+                            OutlinedTextField(
+                                value = cashOutTexts[entryId].orEmpty(),
+                                onValueChange = { cashOutTexts = cashOutTexts + (entryId to it) },
+                                label = { Text(entryWithPlayer.player.name) },
+                                isError = cashOutCentsById[entryId] == null,
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (rowEntries.size == 1) {
+                            Box(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Difference",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = differenceCents?.let(::formatCents) ?: "—",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = if (differenceCents == 0L) {
+                            Color(0xFF2E7D32)
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val cashOuts = cashOutCentsById.mapNotNull { (id, cents) ->
+                        cents?.let { id to it }
+                    }.toMap()
+                    onConfirm(cashOuts)
+                },
+                enabled = differenceCents == 0L,
+            ) {
+                Text("Conclude")
             }
         },
         dismissButton = {

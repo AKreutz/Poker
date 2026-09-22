@@ -33,6 +33,9 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
     private val _showPlayerSelection = MutableStateFlow(false)
     val showPlayerSelection: StateFlow<Boolean> = _showPlayerSelection.asStateFlow()
 
+    private val _showConcludeDialog = MutableStateFlow(false)
+    val showConcludeDialog: StateFlow<Boolean> = _showConcludeDialog.asStateFlow()
+
     fun startSession() {
         viewModelScope.launch {
             repository.createSession(LocalDate.now())
@@ -66,9 +69,22 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
     }
 
     fun concludeSession() {
-        val session = openSession.value?.session ?: return
+        _showConcludeDialog.value = true
+    }
+
+    fun dismissConcludeDialog() {
+        _showConcludeDialog.value = false
+    }
+
+    fun confirmConclude(cashOutsByEntryId: Map<String, Long>) {
+        val sessionWithEntries = openSession.value ?: return
         viewModelScope.launch {
-            repository.concludeSession(session)
+            sessionWithEntries.entries.forEach { entryWithPlayer ->
+                val cashOutCents = cashOutsByEntryId[entryWithPlayer.entry.id] ?: return@forEach
+                repository.updateEntry(entryWithPlayer.entry.copy(cashOutCents = cashOutCents))
+            }
+            repository.concludeSession(sessionWithEntries.session)
+            _showConcludeDialog.value = false
         }
     }
 

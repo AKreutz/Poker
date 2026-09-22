@@ -35,7 +35,7 @@ interface SessionEntryDao {
         FROM session_entries e
         JOIN players p ON p.id = e.playerId
         JOIN sessions s ON s.id = e.sessionId
-        WHERE e.isDeleted = 0 AND p.isDeleted = 0 AND s.isDeleted = 0
+        WHERE e.isDeleted = 0 AND p.isDeleted = 0 AND s.isDeleted = 0 AND s.status = 'CONCLUDED'
         GROUP BY p.id
         ORDER BY totalDeltaCents DESC
         """

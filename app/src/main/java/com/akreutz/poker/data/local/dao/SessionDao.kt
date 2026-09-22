@@ -26,7 +26,7 @@ interface SessionDao {
     fun observeActiveSessions(): Flow<List<SessionEntity>>
 
     @Transaction
-    @Query("SELECT * FROM sessions WHERE isDeleted = 0 ORDER BY date DESC")
+    @Query("SELECT * FROM sessions WHERE isDeleted = 0 AND status = 'CONCLUDED' ORDER BY date DESC")
     fun observeSessionsWithEntries(): Flow<List<SessionWithEntries>>
 
     @Transaction
