@@ -15,5 +15,4 @@
 local.properties
 
 # Session data (not tracked)
-/Poker.csv
 /app/src/main/assets/Poker.csv
