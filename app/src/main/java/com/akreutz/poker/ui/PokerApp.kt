@@ -1,7 +1,10 @@
 package com.akreutz.poker.ui
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -18,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.akreutz.poker.navigation.PokerDestination
+import com.akreutz.poker.ui.home.HomeScreen
 import com.akreutz.poker.ui.sessions.SessionsScreen
 import com.akreutz.poker.ui.stats.StatsScreen
 
@@ -29,11 +33,20 @@ fun PokerApp() {
     val currentDestination = backStackEntry?.destination
     val currentTab = PokerDestination.entries.firstOrNull { destination ->
         currentDestination?.hierarchy?.any { it.route == destination.route } == true
-    } ?: PokerDestination.Sessions
+    } ?: PokerDestination.Home
 
     Scaffold(
         topBar = {
             TopAppBar(title = { Text(currentTab.label) })
+        },
+        floatingActionButton = {
+            if (currentTab == PokerDestination.Home) {
+                ExtendedFloatingActionButton(
+                    onClick = { /* TODO: start new session */ },
+                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                    text = { Text("Start new session") },
+                )
+            }
         },
         bottomBar = {
             NavigationBar {
@@ -58,11 +71,12 @@ fun PokerApp() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = PokerDestination.Sessions.route,
+            startDestination = PokerDestination.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(PokerDestination.Sessions.route) { SessionsScreen() }
+            composable(PokerDestination.Home.route) { HomeScreen() }
             composable(PokerDestination.Stats.route) { StatsScreen() }
+            composable(PokerDestination.Sessions.route) { SessionsScreen() }
         }
     }
 }
