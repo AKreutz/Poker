@@ -170,14 +170,14 @@ private fun SessionEntriesList(sessionWithEntries: SessionWithEntries) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(22.dp)
+                        .size(28.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.tertiaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = "${index + 1}",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                     )
