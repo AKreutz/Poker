@@ -17,10 +17,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MoneyOff
+import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.TrendingFlat
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
@@ -57,7 +65,16 @@ import kotlin.math.roundToLong
 private val RECORD_DATE_FORMATTER =
     DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.GERMANY)
 
-private data class RecordRow(val label: String, val playerName: String, val value: String, val dateText: String?)
+private enum class RecordTone { POSITIVE, NEGATIVE, NEUTRAL, GOLD }
+
+private data class RecordTile(
+    val label: String,
+    val playerName: String,
+    val value: String,
+    val dateText: String?,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val tone: RecordTone,
+)
 
 private fun PlayerStreak.formatDateRange(): String =
     if (startDate == endDate) {
@@ -291,42 +308,185 @@ private fun DivergingBar(delta: Long, maxAbsDelta: Long, modifier: Modifier = Mo
 
 @Composable
 private fun RecordsCard(records: PokerRecords) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            val rows = buildList {
-                records.mostProfitable?.let {
-                    add(RecordRow("Most profitable", it.playerName, "${formatCents(it.averageCents.roundToLong())} / session", null))
+    val mostProfitableTile = records.mostProfitable?.let {
+        RecordTile(
+            "Most profitable",
+            it.playerName,
+            "${formatCents(it.averageCents.roundToLong())} / session",
+            null,
+            Icons.Filled.EmojiEvents,
+            RecordTone.GOLD,
+        )
+    }
+
+    val biggestWinTile = records.biggestWin?.let {
+        RecordTile(
+            "Biggest win",
+            it.playerName,
+            formatCents(it.deltaCents),
+            it.sessionDate.format(RECORD_DATE_FORMATTER),
+            Icons.Filled.Savings,
+            RecordTone.POSITIVE,
+        )
+    }
+    val biggestLossTile = records.biggestLoss?.let {
+        RecordTile(
+            "Biggest loss",
+            it.playerName,
+            formatCents(it.deltaCents),
+            it.sessionDate.format(RECORD_DATE_FORMATTER),
+            Icons.Filled.MoneyOff,
+            RecordTone.NEGATIVE,
+        )
+    }
+
+    val highestBalanceTile = records.highestBalance?.let {
+        RecordTile(
+            "Highest balance",
+            it.playerName,
+            formatCents(it.balanceCents),
+            it.sessionDate.format(RECORD_DATE_FORMATTER),
+            Icons.Filled.TrendingUp,
+            RecordTone.POSITIVE,
+        )
+    }
+    val lowestBalanceTile = records.lowestBalance?.let {
+        RecordTile(
+            "Lowest balance",
+            it.playerName,
+            formatCents(it.balanceCents),
+            it.sessionDate.format(RECORD_DATE_FORMATTER),
+            Icons.Filled.TrendingDown,
+            RecordTone.NEGATIVE,
+        )
+    }
+
+    val mostConsistentTile = records.mostConsistent?.let {
+        RecordTile(
+            "Most consistent",
+            it.playerName,
+            "± ${formatCents(it.standardDeviationCents.roundToLong())}",
+            null,
+            Icons.Filled.TrendingFlat,
+            RecordTone.NEUTRAL,
+        )
+    }
+    val mostSwingyTile = records.mostSwingy?.let {
+        RecordTile(
+            "Most swingy",
+            it.playerName,
+            "± ${formatCents(it.standardDeviationCents.roundToLong())}",
+            null,
+            Icons.Filled.Timeline,
+            RecordTone.NEUTRAL,
+        )
+    }
+
+    val longestWinStreakTile = records.longestWinStreak?.let {
+        RecordTile(
+            "Longest win streak",
+            it.playerName,
+            "${it.length} sessions",
+            it.formatDateRange(),
+            Icons.Filled.Whatshot,
+            RecordTone.POSITIVE,
+        )
+    }
+    val longestLossStreakTile = records.longestLossStreak?.let {
+        RecordTile(
+            "Longest loss streak",
+            it.playerName,
+            "${it.length} sessions",
+            it.formatDateRange(),
+            Icons.Filled.AcUnit,
+            RecordTone.NEGATIVE,
+        )
+    }
+
+    val rows = listOf(
+        mostConsistentTile to mostSwingyTile,
+        biggestWinTile to biggestLossTile,
+        highestBalanceTile to lowestBalanceTile,
+        longestWinStreakTile to longestLossStreakTile,
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (mostProfitableTile != null) {
+            RecordStatTile(mostProfitableTile, modifier = Modifier.fillMaxWidth())
+        }
+        rows.forEach { (left, right) ->
+            if (left == null && right == null) return@forEach
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                if (left != null) {
+                    RecordStatTile(left, modifier = Modifier.weight(1f))
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
                 }
-                records.mostConsistent?.let {
-                    add(RecordRow("Most consistent", it.playerName, "± ${formatCents(it.standardDeviationCents.roundToLong())}", null))
-                }
-                records.mostSwingy?.let {
-                    add(RecordRow("Most swingy", it.playerName, "± ${formatCents(it.standardDeviationCents.roundToLong())}", null))
-                }
-                records.biggestWin?.let {
-                    add(RecordRow("Biggest win", it.playerName, formatCents(it.deltaCents), it.sessionDate.format(RECORD_DATE_FORMATTER)))
-                }
-                records.biggestLoss?.let {
-                    add(RecordRow("Biggest loss", it.playerName, formatCents(it.deltaCents), it.sessionDate.format(RECORD_DATE_FORMATTER)))
-                }
-                records.highestBalance?.let {
-                    add(RecordRow("Highest balance", it.playerName, formatCents(it.balanceCents), it.sessionDate.format(RECORD_DATE_FORMATTER)))
-                }
-                records.lowestBalance?.let {
-                    add(RecordRow("Lowest balance", it.playerName, formatCents(it.balanceCents), it.sessionDate.format(RECORD_DATE_FORMATTER)))
-                }
-                records.longestWinStreak?.let {
-                    add(RecordRow("Longest win streak", it.playerName, "${it.length} sessions", it.formatDateRange()))
-                }
-                records.longestLossStreak?.let {
-                    add(RecordRow("Longest loss streak", it.playerName, "${it.length} sessions", it.formatDateRange()))
+                if (right != null) {
+                    RecordStatTile(right, modifier = Modifier.weight(1f))
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
+        }
+    }
+}
 
-            RecordRows(rows)
+@Composable
+private fun RecordStatTile(tile: RecordTile, modifier: Modifier = Modifier) {
+    val accentColor = when (tile.tone) {
+        RecordTone.POSITIVE -> POSITIVE_COLOR
+        RecordTone.NEGATIVE -> MaterialTheme.colorScheme.error
+        RecordTone.NEUTRAL -> MaterialTheme.colorScheme.onSurfaceVariant
+        RecordTone.GOLD -> MaterialTheme.colorScheme.tertiary
+    }
+    val containerColor = when (tile.tone) {
+        RecordTone.POSITIVE -> POSITIVE_CONTAINER_COLOR
+        RecordTone.NEGATIVE -> MaterialTheme.colorScheme.errorContainer
+        RecordTone.NEUTRAL -> MaterialTheme.colorScheme.surfaceVariant
+        RecordTone.GOLD -> MaterialTheme.colorScheme.tertiaryContainer
+    }
+
+    ElevatedCard(
+        modifier = modifier,
+        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = tile.icon,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.size(6.dp))
+                Text(
+                    text = tile.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = accentColor,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Spacer(modifier = Modifier.size(8.dp))
+            Text(
+                text = tile.playerName,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = tile.value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            if (tile.dateText != null) {
+                Text(
+                    text = tile.dateText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -385,7 +545,7 @@ private fun ActiveStreakTile(streak: PlayerStreak) {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = if (streak.isWin) Icons.Filled.LocalFireDepartment else Icons.Filled.TrendingDown,
+                    imageVector = if (streak.isWin) Icons.Filled.LocalFireDepartment else Icons.Filled.AcUnit,
                     contentDescription = null,
                     tint = accentColor,
                     modifier = Modifier.size(24.dp),
@@ -420,42 +580,3 @@ private fun ActiveStreakTile(streak: PlayerStreak) {
     }
 }
 
-@Composable
-private fun RecordRows(rows: List<RecordRow>) {
-    rows.forEachIndexed { index, row ->
-        if (index > 0) {
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-        }
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = row.label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = row.playerName,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = row.value,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    if (row.dateText != null) {
-                        Text(
-                            text = row.dateText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
