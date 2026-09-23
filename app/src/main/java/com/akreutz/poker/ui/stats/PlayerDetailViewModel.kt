@@ -5,9 +5,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akreutz.poker.data.local.entity.PlayerEntity
 import com.akreutz.poker.data.local.entity.SessionStatus
-import com.akreutz.poker.data.model.PlayerSessionDelta
 import com.akreutz.poker.data.model.PlayerTotals
 import com.akreutz.poker.data.model.SinglePlayerRecords
+import com.akreutz.poker.data.model.chronologicalDeltasByPlayerId
 import com.akreutz.poker.data.model.computeSinglePlayerRecords
 import com.akreutz.poker.data.model.standardDeviation
 import com.akreutz.poker.data.repository.PokerRepository
@@ -65,6 +65,7 @@ class PlayerDetailViewModel(
                     )
                 }
             }
+        val deltasChronological = chronologicalDeltasByPlayerId(sessions)[playerId].orEmpty()
 
         PlayerDetailUiState(
             player = player,
@@ -72,10 +73,10 @@ class PlayerDetailViewModel(
             sessionResults = sessionResultsChronological.sortedByDescending { it.sessionDate },
             records = computeSinglePlayerRecords(
                 playerName = player?.name.orEmpty(),
-                deltasChronological = sessionResultsChronological.map { PlayerSessionDelta(it.sessionDate, it.deltaCents) },
+                deltasChronological = deltasChronological,
             ),
-            standardDeviationCents = if (sessionResultsChronological.size >= 2) {
-                sessionResultsChronological.map { it.deltaCents }.standardDeviation()
+            standardDeviationCents = if (deltasChronological.size >= 2) {
+                deltasChronological.map { it.deltaCents }.standardDeviation()
             } else {
                 null
             },

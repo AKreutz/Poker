@@ -62,6 +62,7 @@ import com.akreutz.poker.ui.common.RecordStatTile
 import com.akreutz.poker.ui.common.RecordTile
 import com.akreutz.poker.ui.common.RecordTone
 import com.akreutz.poker.ui.common.formatCents
+import com.akreutz.poker.ui.common.formatSessions
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -378,7 +379,7 @@ private fun RecordsCard(records: PokerRecords) {
         RecordTile(
             label = "Longest win streak",
             playerName = it.playerName,
-            value = "${it.length} sessions",
+            value = formatSessions(it.length),
             dateText = it.formatDateRange(),
             icon = Icons.Filled.Whatshot,
             tone = RecordTone.POSITIVE,
@@ -388,7 +389,7 @@ private fun RecordsCard(records: PokerRecords) {
         RecordTile(
             label = "Longest loss streak",
             playerName = it.playerName,
-            value = "${it.length} sessions",
+            value = formatSessions(it.length),
             dateText = it.formatDateRange(),
             icon = Icons.Filled.AcUnit,
             tone = RecordTone.NEGATIVE,

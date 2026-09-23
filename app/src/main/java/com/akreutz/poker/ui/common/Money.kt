@@ -14,3 +14,5 @@ fun parseCentsInput(raw: String): Long? {
     val value = normalized.toDoubleOrNull() ?: return null
     return Math.round(value * 100)
 }
+
+fun formatSessions(count: Int): String = "$count session${if (count == 1) "" else "s"}"

@@ -43,6 +43,7 @@ import com.akreutz.poker.ui.common.RecordStatTile
 import com.akreutz.poker.ui.common.RecordTile
 import com.akreutz.poker.ui.common.RecordTone
 import com.akreutz.poker.ui.common.formatCents
+import com.akreutz.poker.ui.common.formatSessions
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -252,7 +253,7 @@ private fun PlayerRecordsCard(records: SinglePlayerRecords) {
     val longestWinStreakTile = records.longestWinStreak?.let {
         RecordTile(
             label = "Longest win streak",
-            value = "${it.length} sessions",
+            value = formatSessions(it.length),
             dateText = it.formatDateRange(),
             icon = Icons.Filled.Whatshot,
             tone = RecordTone.POSITIVE,
@@ -261,7 +262,7 @@ private fun PlayerRecordsCard(records: SinglePlayerRecords) {
     val longestLossStreakTile = records.longestLossStreak?.let {
         RecordTile(
             label = "Longest loss streak",
-            value = "${it.length} sessions",
+            value = formatSessions(it.length),
             dateText = it.formatDateRange(),
             icon = Icons.Filled.AcUnit,
             tone = RecordTone.NEGATIVE,
@@ -270,7 +271,7 @@ private fun PlayerRecordsCard(records: SinglePlayerRecords) {
     val activeStreakTile = records.activeStreak?.let {
         RecordTile(
             label = if (it.isWin) "Active win streak" else "Active loss streak",
-            value = "${it.length} sessions",
+            value = formatSessions(it.length),
             dateText = it.formatDateRange(),
             icon = if (it.isWin) Icons.Filled.LocalFireDepartment else Icons.Filled.AcUnit,
             tone = if (it.isWin) RecordTone.POSITIVE else RecordTone.NEGATIVE,

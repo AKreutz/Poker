@@ -1,5 +1,6 @@
 package com.akreutz.poker.data.model
 
+import com.akreutz.poker.data.local.entity.SessionStatus
 import java.time.LocalDate
 
 /** One player's session result, used as input to per-player record calculation. */
@@ -95,6 +96,25 @@ fun computeSinglePlayerRecords(playerName: String, deltasChronological: List<Pla
         activeStreak = activeStreak,
     )
 }
+
+/**
+ * Walks concluded sessions in chronological order and groups each player's session deltas by
+ * player id. Shared by every screen that needs a player's result history: the all-players
+ * [computePokerRecords], per-player detail/stat screens, and volatility calculations.
+ */
+fun chronologicalDeltasByPlayerId(sessions: List<SessionWithEntries>): Map<String, List<PlayerSessionDelta>> =
+    sessions
+        .filter { it.session.status == SessionStatus.CONCLUDED }
+        .sortedBy { it.session.date }
+        .flatMap { sessionWithEntries ->
+            sessionWithEntries.entries.map { entryWithPlayer ->
+                entryWithPlayer.entry.playerId to PlayerSessionDelta(
+                    sessionDate = sessionWithEntries.session.date,
+                    deltaCents = entryWithPlayer.entry.deltaCents,
+                )
+            }
+        }
+        .groupBy({ it.first }, { it.second })
 
 fun computePokerRecords(sessions: List<SessionWithEntries>): PokerRecords {
     val chronological = sessions.sortedBy { it.session.date }

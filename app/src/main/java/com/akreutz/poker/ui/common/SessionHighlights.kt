@@ -63,7 +63,7 @@ private fun StreakUpdateTile(update: StreakUpdate) {
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             iconColor = MaterialTheme.colorScheme.onTertiaryContainer,
             title = "Streak continues",
-            subtitle = "${update.playerName} extended their $kind streak to ${update.length} sessions",
+            subtitle = "${update.playerName} extended their $kind streak to ${formatSessions(update.length)}",
         )
 
         is StreakUpdate.Broken -> HighlightTile(
