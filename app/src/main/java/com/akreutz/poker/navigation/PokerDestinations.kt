@@ -17,3 +17,9 @@ enum class PokerDestination(
     Stats(route = "stats", label = "Stats", icon = Icons.Filled.BarChart),
     Sessions(route = "sessions", label = "Sessions", icon = Icons.AutoMirrored.Filled.List),
 }
+
+object PokerRoutes {
+    const val PLAYER_DETAIL = "player/{playerId}"
+
+    fun playerDetail(playerId: String) = "player/$playerId"
+}

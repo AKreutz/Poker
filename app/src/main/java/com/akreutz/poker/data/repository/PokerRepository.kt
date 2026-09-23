@@ -27,6 +27,8 @@ class PokerRepository(
     fun observeActivePlayersWithSessionCount(): Flow<List<PlayerWithSessionCount>> =
         playerDao.observeActivePlayersWithSessionCount()
 
+    suspend fun getPlayerById(id: String): PlayerEntity? = playerDao.getById(id)
+
     fun observeSessionsWithEntries(): Flow<List<SessionWithEntries>> =
         sessionDao.observeSessionsWithEntries()
 

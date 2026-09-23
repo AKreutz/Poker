@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,15 +29,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.akreutz.poker.PokerApplication
 import com.akreutz.poker.SyncState
 import com.akreutz.poker.navigation.PokerDestination
+import com.akreutz.poker.navigation.PokerRoutes
 import com.akreutz.poker.ui.home.OverviewScreen
 import com.akreutz.poker.ui.sessions.SessionsScreen
+import com.akreutz.poker.ui.stats.PlayerDetailScreen
 import com.akreutz.poker.ui.stats.StatsScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,9 +50,14 @@ fun PokerApp() {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
-    val currentTab = PokerDestination.entries.firstOrNull { destination ->
-        currentDestination?.hierarchy?.any { it.route == destination.route } == true
-    } ?: PokerDestination.Overview
+    val isPlayerDetail = currentDestination?.route == PokerRoutes.PLAYER_DETAIL
+    val currentTab = if (isPlayerDetail) {
+        PokerDestination.Stats
+    } else {
+        PokerDestination.entries.firstOrNull { destination ->
+            currentDestination?.hierarchy?.any { it.route == destination.route } == true
+        } ?: PokerDestination.Overview
+    }
 
     val application = LocalContext.current.applicationContext as PokerApplication
     val syncState by application.syncState.collectAsState()
@@ -68,7 +78,14 @@ fun PokerApp() {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(currentTab.label) },
+                title = { Text(if (isPlayerDetail) "Player Stats" else currentTab.label) },
+                navigationIcon = {
+                    if (isPlayerDetail) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                },
                 actions = {
                     IconButton(
                         onClick = { application.syncNow() },
@@ -121,8 +138,21 @@ fun PokerApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(PokerDestination.Overview.route) { OverviewScreen() }
-            composable(PokerDestination.Stats.route) { StatsScreen() }
+            composable(PokerDestination.Stats.route) {
+                StatsScreen(
+                    onPlayerClick = { playerId ->
+                        navController.navigate(PokerRoutes.playerDetail(playerId))
+                    },
+                )
+            }
             composable(PokerDestination.Sessions.route) { SessionsScreen() }
+            composable(
+                route = PokerRoutes.PLAYER_DETAIL,
+                arguments = listOf(navArgument("playerId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val playerId = backStackEntry.arguments?.getString("playerId").orEmpty()
+                PlayerDetailScreen(playerId = playerId)
+            }
         }
     }
 }

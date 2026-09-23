@@ -32,10 +32,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akreutz.poker.PokerApplication
-import com.akreutz.poker.data.model.PlayerWithSessionCount
 
 @Composable
-fun StatsScreen(modifier: Modifier = Modifier) {
+fun StatsScreen(modifier: Modifier = Modifier, onPlayerClick: (String) -> Unit = {}) {
     val application = LocalContext.current.applicationContext as PokerApplication
     val viewModel: StatsViewModel = viewModel(
         factory = StatsViewModel.Factory(application.repository),
@@ -62,10 +61,11 @@ fun StatsScreen(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.titleMedium,
             )
         }
-        items(players) { playerWithCount ->
+        items(players, key = { it.playerWithCount.player.id }) { playerStats ->
             PlayerCard(
-                playerWithCount = playerWithCount,
-                onDelete = { viewModel.deletePlayer(playerWithCount.player) },
+                playerStats = playerStats,
+                onClick = { onPlayerClick(playerStats.playerWithCount.player.id) },
+                onDelete = { viewModel.deletePlayer(playerStats.playerWithCount.player) },
             )
         }
     }
@@ -73,13 +73,14 @@ fun StatsScreen(modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun PlayerCard(playerWithCount: PlayerWithSessionCount, onDelete: () -> Unit) {
+private fun PlayerCard(playerStats: PlayerStats, onClick: () -> Unit, onDelete: () -> Unit) {
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    val playerWithCount = playerStats.playerWithCount
 
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = {}, onLongClick = { showDeleteConfirmation = true }),
+            .combinedClickable(onClick = onClick, onLongClick = { showDeleteConfirmation = true }),
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(

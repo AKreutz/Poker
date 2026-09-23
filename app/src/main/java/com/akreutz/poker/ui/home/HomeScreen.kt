@@ -55,6 +55,12 @@ import com.akreutz.poker.PokerApplication
 import com.akreutz.poker.data.model.PlayerStreak
 import com.akreutz.poker.data.model.PlayerTotals
 import com.akreutz.poker.data.model.PokerRecords
+import com.akreutz.poker.ui.common.RECORD_POSITIVE_BADGE_COLOR
+import com.akreutz.poker.ui.common.RECORD_POSITIVE_COLOR
+import com.akreutz.poker.ui.common.RECORD_POSITIVE_CONTAINER_COLOR
+import com.akreutz.poker.ui.common.RecordStatTile
+import com.akreutz.poker.ui.common.RecordTile
+import com.akreutz.poker.ui.common.RecordTone
 import com.akreutz.poker.ui.common.formatCents
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -64,17 +70,6 @@ import kotlin.math.roundToLong
 
 private val RECORD_DATE_FORMATTER =
     DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.GERMANY)
-
-private enum class RecordTone { POSITIVE, NEGATIVE, NEUTRAL, GOLD }
-
-private data class RecordTile(
-    val label: String,
-    val playerName: String,
-    val value: String,
-    val dateText: String?,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val tone: RecordTone,
-)
 
 private fun PlayerStreak.formatDateRange(): String =
     if (startDate == endDate) {
@@ -137,9 +132,6 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
 private const val BALANCE_CARD_MIN_SESSIONS_DEFAULT = 5
 private const val BALANCE_CARD_MIN_SESSIONS_EXPANDED = 2
-private val POSITIVE_COLOR = Color(0xFF2E7D32)
-private val POSITIVE_CONTAINER_COLOR = Color(0xFFDCEDC8)
-private val POSITIVE_BADGE_COLOR = Color(0xFFC5E1A5)
 
 @Composable
 private fun BalanceCard(playerBalances: List<PlayerTotals>) {
@@ -241,7 +233,7 @@ private fun BalanceRow(
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = when {
-                        delta > 0 -> POSITIVE_COLOR
+                        delta > 0 -> RECORD_POSITIVE_COLOR
                         delta < 0 -> MaterialTheme.colorScheme.error
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
@@ -299,7 +291,7 @@ private fun DivergingBar(delta: Long, maxAbsDelta: Long, modifier: Modifier = Mo
                         .fillMaxHeight()
                         .fillMaxWidth(fraction)
                         .clip(RoundedCornerShape(topEnd = 3.dp, bottomEnd = 3.dp))
-                        .background(POSITIVE_COLOR),
+                        .background(RECORD_POSITIVE_COLOR),
                 )
             }
         }
@@ -310,96 +302,96 @@ private fun DivergingBar(delta: Long, maxAbsDelta: Long, modifier: Modifier = Mo
 private fun RecordsCard(records: PokerRecords) {
     val mostProfitableTile = records.mostProfitable?.let {
         RecordTile(
-            "Most profitable",
-            it.playerName,
-            "${formatCents(it.averageCents.roundToLong())} / session",
-            null,
-            Icons.Filled.EmojiEvents,
-            RecordTone.GOLD,
+            label = "Most profitable",
+            playerName = it.playerName,
+            value = "${formatCents(it.averageCents.roundToLong())} / session",
+            dateText = null,
+            icon = Icons.Filled.EmojiEvents,
+            tone = RecordTone.GOLD,
         )
     }
 
     val biggestWinTile = records.biggestWin?.let {
         RecordTile(
-            "Biggest win",
-            it.playerName,
-            formatCents(it.deltaCents),
-            it.sessionDate.format(RECORD_DATE_FORMATTER),
-            Icons.Filled.Savings,
-            RecordTone.POSITIVE,
+            label = "Biggest win",
+            playerName = it.playerName,
+            value = formatCents(it.deltaCents),
+            dateText = it.sessionDate.format(RECORD_DATE_FORMATTER),
+            icon = Icons.Filled.Savings,
+            tone = RecordTone.POSITIVE,
         )
     }
     val biggestLossTile = records.biggestLoss?.let {
         RecordTile(
-            "Biggest loss",
-            it.playerName,
-            formatCents(it.deltaCents),
-            it.sessionDate.format(RECORD_DATE_FORMATTER),
-            Icons.Filled.MoneyOff,
-            RecordTone.NEGATIVE,
+            label = "Biggest loss",
+            playerName = it.playerName,
+            value = formatCents(it.deltaCents),
+            dateText = it.sessionDate.format(RECORD_DATE_FORMATTER),
+            icon = Icons.Filled.MoneyOff,
+            tone = RecordTone.NEGATIVE,
         )
     }
 
     val highestBalanceTile = records.highestBalance?.let {
         RecordTile(
-            "Highest balance",
-            it.playerName,
-            formatCents(it.balanceCents),
-            it.sessionDate.format(RECORD_DATE_FORMATTER),
-            Icons.Filled.TrendingUp,
-            RecordTone.POSITIVE,
+            label = "Highest balance",
+            playerName = it.playerName,
+            value = formatCents(it.balanceCents),
+            dateText = it.sessionDate.format(RECORD_DATE_FORMATTER),
+            icon = Icons.Filled.TrendingUp,
+            tone = RecordTone.POSITIVE,
         )
     }
     val lowestBalanceTile = records.lowestBalance?.let {
         RecordTile(
-            "Lowest balance",
-            it.playerName,
-            formatCents(it.balanceCents),
-            it.sessionDate.format(RECORD_DATE_FORMATTER),
-            Icons.Filled.TrendingDown,
-            RecordTone.NEGATIVE,
+            label = "Lowest balance",
+            playerName = it.playerName,
+            value = formatCents(it.balanceCents),
+            dateText = it.sessionDate.format(RECORD_DATE_FORMATTER),
+            icon = Icons.Filled.TrendingDown,
+            tone = RecordTone.NEGATIVE,
         )
     }
 
     val mostConsistentTile = records.mostConsistent?.let {
         RecordTile(
-            "Most consistent",
-            it.playerName,
-            "± ${formatCents(it.standardDeviationCents.roundToLong())}",
-            null,
-            Icons.Filled.TrendingFlat,
-            RecordTone.NEUTRAL,
+            label = "Most consistent",
+            playerName = it.playerName,
+            value = "± ${formatCents(it.standardDeviationCents.roundToLong())}",
+            dateText = null,
+            icon = Icons.Filled.TrendingFlat,
+            tone = RecordTone.NEUTRAL,
         )
     }
     val mostSwingyTile = records.mostSwingy?.let {
         RecordTile(
-            "Most swingy",
-            it.playerName,
-            "± ${formatCents(it.standardDeviationCents.roundToLong())}",
-            null,
-            Icons.Filled.Timeline,
-            RecordTone.NEUTRAL,
+            label = "Most swingy",
+            playerName = it.playerName,
+            value = "± ${formatCents(it.standardDeviationCents.roundToLong())}",
+            dateText = null,
+            icon = Icons.Filled.Timeline,
+            tone = RecordTone.NEUTRAL,
         )
     }
 
     val longestWinStreakTile = records.longestWinStreak?.let {
         RecordTile(
-            "Longest win streak",
-            it.playerName,
-            "${it.length} sessions",
-            it.formatDateRange(),
-            Icons.Filled.Whatshot,
-            RecordTone.POSITIVE,
+            label = "Longest win streak",
+            playerName = it.playerName,
+            value = "${it.length} sessions",
+            dateText = it.formatDateRange(),
+            icon = Icons.Filled.Whatshot,
+            tone = RecordTone.POSITIVE,
         )
     }
     val longestLossStreakTile = records.longestLossStreak?.let {
         RecordTile(
-            "Longest loss streak",
-            it.playerName,
-            "${it.length} sessions",
-            it.formatDateRange(),
-            Icons.Filled.AcUnit,
-            RecordTone.NEGATIVE,
+            label = "Longest loss streak",
+            playerName = it.playerName,
+            value = "${it.length} sessions",
+            dateText = it.formatDateRange(),
+            icon = Icons.Filled.AcUnit,
+            tone = RecordTone.NEGATIVE,
         )
     }
 
@@ -436,62 +428,6 @@ private fun RecordsCard(records: PokerRecords) {
 }
 
 @Composable
-private fun RecordStatTile(tile: RecordTile, modifier: Modifier = Modifier) {
-    val accentColor = when (tile.tone) {
-        RecordTone.POSITIVE -> POSITIVE_COLOR
-        RecordTone.NEGATIVE -> MaterialTheme.colorScheme.error
-        RecordTone.NEUTRAL -> MaterialTheme.colorScheme.onSurfaceVariant
-        RecordTone.GOLD -> MaterialTheme.colorScheme.tertiary
-    }
-    val containerColor = when (tile.tone) {
-        RecordTone.POSITIVE -> POSITIVE_CONTAINER_COLOR
-        RecordTone.NEGATIVE -> MaterialTheme.colorScheme.errorContainer
-        RecordTone.NEUTRAL -> MaterialTheme.colorScheme.surfaceVariant
-        RecordTone.GOLD -> MaterialTheme.colorScheme.tertiaryContainer
-    }
-
-    ElevatedCard(
-        modifier = modifier,
-        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = tile.icon,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(16.dp),
-                )
-                Spacer(modifier = Modifier.size(6.dp))
-                Text(
-                    text = tile.label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = accentColor,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-            Spacer(modifier = Modifier.size(8.dp))
-            Text(
-                text = tile.playerName,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = tile.value,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
-            if (tile.dateText != null) {
-                Text(
-                    text = tile.dateText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun ActiveStreaksCard(records: PokerRecords) {
     val streaks = listOfNotNull(records.longestActiveWinStreak, records.longestActiveLossStreak)
 
@@ -518,10 +454,10 @@ private fun ActiveStreaksCard(records: PokerRecords) {
 
 @Composable
 private fun ActiveStreakTile(streak: PlayerStreak) {
-    val accentColor = if (streak.isWin) POSITIVE_COLOR else MaterialTheme.colorScheme.error
-    val containerColor = if (streak.isWin) POSITIVE_CONTAINER_COLOR else MaterialTheme.colorScheme.errorContainer
+    val accentColor = if (streak.isWin) RECORD_POSITIVE_COLOR else MaterialTheme.colorScheme.error
+    val containerColor = if (streak.isWin) RECORD_POSITIVE_CONTAINER_COLOR else MaterialTheme.colorScheme.errorContainer
     val badgeColor = if (streak.isWin) {
-        POSITIVE_BADGE_COLOR
+        RECORD_POSITIVE_BADGE_COLOR
     } else {
         lerp(MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.error, 0.5f)
     }
