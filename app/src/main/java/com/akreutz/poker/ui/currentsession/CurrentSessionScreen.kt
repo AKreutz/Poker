@@ -71,7 +71,9 @@ fun CurrentSessionScreen(modifier: Modifier = Modifier) {
     if (showPlayerSelection) {
         PlayerSelectionDialog(
             players = players,
-            onConfirm = { selectedIds, buyInCents -> viewModel.confirmPlayerSelection(selectedIds, buyInCents) },
+            onConfirm = { selectedIds, newPlayerNames, buyInCents ->
+                viewModel.confirmPlayerSelection(selectedIds, newPlayerNames, buyInCents)
+            },
             onDismiss = { viewModel.dismissPlayerSelection() },
         )
     }
@@ -387,63 +389,91 @@ private const val DEFAULT_BUY_IN_CENTS = 400L
 @Composable
 private fun PlayerSelectionDialog(
     players: List<PlayerWithSessionCount>,
-    onConfirm: (Set<String>, Long) -> Unit,
+    onConfirm: (Set<String>, Set<String>, Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var selectedPlayerIds by remember { mutableStateOf(emptySet<String>()) }
+    var newPlayerNames by remember { mutableStateOf(emptySet<String>()) }
     var buyInText by remember { mutableStateOf(formatCents(DEFAULT_BUY_IN_CENTS)) }
     var showAllPlayers by remember { mutableStateOf(false) }
+    var showAddPlayerDialog by remember { mutableStateOf(false) }
     val buyInCents = parseCentsInput(buyInText)
 
     val frequentPlayers = players.filter { it.sessionsPlayed > 2 }
     val infrequentPlayers = players.filter { it.sessionsPlayed <= 2 }
-    val visiblePlayers = if (showAllPlayers) players else frequentPlayers
+    val visiblePlayers = if (showAllPlayers) {
+        players
+    } else {
+        frequentPlayers + infrequentPlayers.filter { it.player.id in selectedPlayerIds }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Select players") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                if (players.isEmpty()) {
-                    Text("No players yet")
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            visiblePlayers.forEach { playerWithCount ->
-                                val player = playerWithCount.player
-                                val selected = player.id in selectedPlayerIds
-                                FilterChip(
-                                    selected = selected,
-                                    onClick = {
-                                        selectedPlayerIds = if (selected) {
-                                            selectedPlayerIds - player.id
-                                        } else {
-                                            selectedPlayerIds + player.id
-                                        }
-                                    },
-                                    label = { Text(player.name) },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = if (selected) Icons.Filled.Check else Icons.Filled.Person,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(FilterChipDefaults.IconSize),
-                                        )
-                                    },
-                                )
-                            }
+                Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        visiblePlayers.forEach { playerWithCount ->
+                            val player = playerWithCount.player
+                            val selected = player.id in selectedPlayerIds
+                            FilterChip(
+                                selected = selected,
+                                onClick = {
+                                    selectedPlayerIds = if (selected) {
+                                        selectedPlayerIds - player.id
+                                    } else {
+                                        selectedPlayerIds + player.id
+                                    }
+                                },
+                                label = { Text(player.name) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = if (selected) Icons.Filled.Check else Icons.Filled.Person,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(FilterChipDefaults.IconSize),
+                                    )
+                                },
+                            )
                         }
-                        if (infrequentPlayers.isNotEmpty()) {
-                            TextButton(
-                                onClick = { showAllPlayers = !showAllPlayers },
-                                contentPadding = PaddingValues(vertical = 0.dp, horizontal = 8.dp),
-                            ) {
-                                Text(if (showAllPlayers) "Show less" else "Show more")
+                        newPlayerNames.forEach { name ->
+                            FilterChip(
+                                selected = true,
+                                onClick = { newPlayerNames = newPlayerNames - name },
+                                label = { Text(name) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Filled.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(FilterChipDefaults.IconSize),
+                                    )
+                                },
+                            )
+                        }
+                        FilterChip(
+                            selected = false,
+                            onClick = { showAddPlayerDialog = true },
+                            label = { Text("Add player") },
+                            leadingIcon = {
                                 Icon(
-                                    imageVector = if (showAllPlayers) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                                    imageVector = Icons.Filled.Add,
                                     contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(FilterChipDefaults.IconSize),
                                 )
-                            }
+                            },
+                        )
+                    }
+                    if (infrequentPlayers.isNotEmpty()) {
+                        TextButton(
+                            onClick = { showAllPlayers = !showAllPlayers },
+                            contentPadding = PaddingValues(vertical = 0.dp, horizontal = 8.dp),
+                        ) {
+                            Text(if (showAllPlayers) "Show less" else "Show more")
+                            Icon(
+                                imageVector = if (showAllPlayers) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
                         }
                     }
                 }
@@ -461,10 +491,55 @@ private fun PlayerSelectionDialog(
         },
         confirmButton = {
             Button(
-                onClick = { buyInCents?.let { onConfirm(selectedPlayerIds, it) } },
-                enabled = buyInCents != null && selectedPlayerIds.isNotEmpty(),
+                onClick = { buyInCents?.let { onConfirm(selectedPlayerIds, newPlayerNames, it) } },
+                enabled = buyInCents != null && (selectedPlayerIds.isNotEmpty() || newPlayerNames.isNotEmpty()),
             ) {
                 Text("Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
+
+    if (showAddPlayerDialog) {
+        AddPlayerDialog(
+            onConfirm = { name ->
+                newPlayerNames = newPlayerNames + name
+                showAddPlayerDialog = false
+            },
+            onDismiss = { showAddPlayerDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun AddPlayerDialog(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add player") },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Player name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(name.trim()) },
+                enabled = name.isNotBlank(),
+            ) {
+                Text("Add")
             }
         },
         dismissButton = {

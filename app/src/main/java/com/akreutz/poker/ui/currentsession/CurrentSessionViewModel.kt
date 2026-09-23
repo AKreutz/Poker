@@ -37,18 +37,16 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
     val showConcludeDialog: StateFlow<Boolean> = _showConcludeDialog.asStateFlow()
 
     fun startSession() {
-        viewModelScope.launch {
-            repository.createSession(LocalDate.now())
-            _showPlayerSelection.value = true
-        }
+        _showPlayerSelection.value = true
     }
 
-    fun confirmPlayerSelection(selectedPlayerIds: Set<String>, buyInCents: Long) {
-        val sessionId = openSession.value?.session?.id ?: return
+    fun confirmPlayerSelection(selectedPlayerIds: Set<String>, newPlayerNames: Set<String>, buyInCents: Long) {
         viewModelScope.launch {
-            selectedPlayerIds.forEach { playerId ->
+            val newPlayerIds = newPlayerNames.map { repository.getOrCreatePlayer(it).id }
+            val session = repository.createSession(LocalDate.now())
+            (selectedPlayerIds + newPlayerIds).forEach { playerId ->
                 repository.addEntry(
-                    sessionId = sessionId,
+                    sessionId = session.id,
                     playerId = playerId,
                     buyInCents = buyInCents,
                     cashOutCents = 0,
@@ -59,13 +57,7 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
     }
 
     fun dismissPlayerSelection() {
-        val session = openSession.value?.session
         _showPlayerSelection.value = false
-        if (session != null) {
-            viewModelScope.launch {
-                repository.cancelSession(session)
-            }
-        }
     }
 
     fun increaseBuyIn(entry: SessionEntryEntity, additionalCents: Long) {
