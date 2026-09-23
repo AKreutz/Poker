@@ -14,9 +14,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
@@ -34,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -94,7 +99,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         }
 
         Text(
-            text = "Active Streaks",
+            text = "Longest Active Streaks",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(top = 24.dp),
         )
@@ -116,6 +121,8 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 private const val BALANCE_CARD_MIN_SESSIONS_DEFAULT = 5
 private const val BALANCE_CARD_MIN_SESSIONS_EXPANDED = 2
 private val POSITIVE_COLOR = Color(0xFF2E7D32)
+private val POSITIVE_CONTAINER_COLOR = Color(0xFFDCEDC8)
+private val POSITIVE_BADGE_COLOR = Color(0xFFC5E1A5)
 
 @Composable
 private fun BalanceCard(playerBalances: List<PlayerTotals>) {
@@ -326,29 +333,89 @@ private fun RecordsCard(records: PokerRecords) {
 
 @Composable
 private fun ActiveStreaksCard(records: PokerRecords) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            val rows = buildList {
-                records.longestActiveWinStreak?.let {
-                    add(RecordRow("Longest active win streak", it.playerName, "${it.length} sessions", it.formatDateRange()))
-                }
-                records.longestActiveLossStreak?.let {
-                    add(RecordRow("Longest active loss streak", it.playerName, "${it.length} sessions", it.formatDateRange()))
-                }
-            }
+    val streaks = listOfNotNull(records.longestActiveWinStreak, records.longestActiveLossStreak)
 
-            if (rows.isEmpty()) {
+    if (streaks.isEmpty()) {
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "No active streaks",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            } else {
-                RecordRows(rows)
             }
+        }
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        streaks.forEach { streak -> ActiveStreakTile(streak) }
+    }
+}
+
+@Composable
+private fun ActiveStreakTile(streak: PlayerStreak) {
+    val accentColor = if (streak.isWin) POSITIVE_COLOR else MaterialTheme.colorScheme.error
+    val containerColor = if (streak.isWin) POSITIVE_CONTAINER_COLOR else MaterialTheme.colorScheme.errorContainer
+    val badgeColor = if (streak.isWin) {
+        POSITIVE_BADGE_COLOR
+    } else {
+        lerp(MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.error, 0.5f)
+    }
+    val label = if (streak.isWin) "Active win streak" else "Active loss streak"
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(badgeColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = if (streak.isWin) Icons.Filled.LocalFireDepartment else Icons.Filled.TrendingDown,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+            Spacer(modifier = Modifier.size(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = accentColor,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = streak.playerName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = streak.formatDateRange(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = "${streak.length}",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = accentColor,
+            )
         }
     }
 }
