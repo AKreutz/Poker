@@ -5,7 +5,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
 import com.akreutz.poker.data.model.PlayerWithSessionCount
+import com.akreutz.poker.data.model.SessionResult
 import com.akreutz.poker.data.model.SessionWithEntries
+import com.akreutz.poker.data.model.computePokerRecords
+import com.akreutz.poker.data.model.computeSessionResult
 import com.akreutz.poker.data.repository.PokerRepository
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +38,9 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
 
     private val _showConcludeDialog = MutableStateFlow(false)
     val showConcludeDialog: StateFlow<Boolean> = _showConcludeDialog.asStateFlow()
+
+    private val _sessionResult = MutableStateFlow<SessionResult?>(null)
+    val sessionResult: StateFlow<SessionResult?> = _sessionResult.asStateFlow()
 
     fun startSession() {
         _showPlayerSelection.value = true
@@ -77,13 +83,31 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
     fun confirmConclude(cashOutsByEntryId: Map<String, Long>) {
         val sessionWithEntries = openSession.value ?: return
         viewModelScope.launch {
+            val sessionsBefore = repository.getSessionsWithEntries()
+            val recordsBefore = if (sessionsBefore.isEmpty()) null else computePokerRecords(sessionsBefore)
+
             sessionWithEntries.entries.forEach { entryWithPlayer ->
                 val cashOutCents = cashOutsByEntryId[entryWithPlayer.entry.id] ?: return@forEach
                 repository.updateEntry(entryWithPlayer.entry.copy(cashOutCents = cashOutCents))
             }
             repository.concludeSession(sessionWithEntries.session)
             _showConcludeDialog.value = false
+
+            val updatedEntries = sessionWithEntries.entries.map { entryWithPlayer ->
+                val cashOutCents = cashOutsByEntryId[entryWithPlayer.entry.id] ?: entryWithPlayer.entry.cashOutCents
+                entryWithPlayer.copy(entry = entryWithPlayer.entry.copy(cashOutCents = cashOutCents))
+            }
+            val concludedSession = sessionWithEntries.copy(entries = updatedEntries)
+
+            val sessionsAfter = repository.getSessionsWithEntries()
+            val recordsAfter = computePokerRecords(sessionsAfter)
+
+            _sessionResult.value = computeSessionResult(concludedSession, recordsBefore, recordsAfter)
         }
+    }
+
+    fun dismissSessionResult() {
+        _sessionResult.value = null
     }
 
     fun cancelSession() {

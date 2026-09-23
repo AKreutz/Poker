@@ -14,6 +14,7 @@ import com.akreutz.poker.data.sync.LocalChangeTracker
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 class PokerRepository(
     private val playerDao: PlayerDao,
@@ -28,6 +29,9 @@ class PokerRepository(
 
     fun observeSessionsWithEntries(): Flow<List<SessionWithEntries>> =
         sessionDao.observeSessionsWithEntries()
+
+    suspend fun getSessionsWithEntries(): List<SessionWithEntries> =
+        sessionDao.observeSessionsWithEntries().first()
 
     fun observeOpenSession(): Flow<SessionWithEntries?> =
         sessionDao.observeSessionWithEntriesByStatus(SessionStatus.OPEN)

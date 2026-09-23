@@ -1,13 +1,18 @@
 package com.akreutz.poker.ui.common
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -29,9 +34,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.akreutz.poker.data.model.SessionResult
 import com.akreutz.poker.data.model.SessionWithEntries
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -43,6 +50,7 @@ private val SESSION_DATE_FORMATTER =
 @Composable
 fun SessionCard(
     sessionWithEntries: SessionWithEntries,
+    sessionResult: SessionResult? = null,
     initiallyExpanded: Boolean = false,
     onDelete: (() -> Unit)? = null,
 ) {
@@ -84,8 +92,18 @@ fun SessionCard(
 
             if (expanded) {
                 HorizontalDivider()
-                Column(modifier = Modifier.padding(bottom = 16.dp, top = 8.dp)) {
-                    SessionEntriesList(sessionWithEntries)
+                Column(
+                    modifier = Modifier.padding(bottom = 16.dp, top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Column {
+                        SessionEntriesList(sessionWithEntries)
+                    }
+                    if (sessionResult != null &&
+                        (sessionResult.newRecords.isNotEmpty() || sessionResult.streakUpdates.isNotEmpty())
+                    ) {
+                        SessionHighlights(sessionResult)
+                    }
                 }
             }
         }
@@ -131,45 +149,63 @@ fun StaticSessionCard(sessionWithEntries: SessionWithEntries) {
     }
 }
 
+private val SESSION_ENTRY_POSITIVE_COLOR = Color(0xFF2E7D32)
+
 @Composable
 private fun SessionEntriesList(sessionWithEntries: SessionWithEntries) {
     val sortedEntries = sessionWithEntries.entries.sortedByDescending { it.entry.deltaCents }
-    sortedEntries.forEach { entryWithPlayer ->
+    sortedEntries.forEachIndexed { index, entryWithPlayer ->
+        if (index > 0) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        }
+        val entry = entryWithPlayer.entry
+        val delta = entry.deltaCents
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                text = entryWithPlayer.player.name,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            val entry = entryWithPlayer.entry
-            val delta = entry.deltaCents
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "${formatCents(entry.buyInCents)} → ${formatCents(entry.cashOutCents)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                val deltaColor = when {
-                    delta > 0 -> Color(0xFF2E7D32)
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.tertiaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "${index + 1}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = entryWithPlayer.player.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "${formatCents(entry.buyInCents)} → ${formatCents(entry.cashOutCents)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Text(
+                text = formatCents(delta),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = when {
+                    delta > 0 -> SESSION_ENTRY_POSITIVE_COLOR
                     delta < 0 -> MaterialTheme.colorScheme.error
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
-                }
-                Text(
-                    text = "  ${if (delta < 0) "-" else " "}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = deltaColor,
-                    modifier = Modifier.width(14.dp),
-                )
-                Text(
-                    text = formatCents(kotlin.math.abs(delta)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = deltaColor,
-                )
-            }
+                },
+            )
         }
     }
 }

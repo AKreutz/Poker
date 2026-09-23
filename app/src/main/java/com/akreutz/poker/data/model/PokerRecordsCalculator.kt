@@ -47,10 +47,10 @@ fun computePokerRecords(sessions: List<SessionWithEntries>): PokerRecords {
                 currentStreakEnd[name] = date
 
                 if (isWin && (longestWinStreak == null || newLength > longestWinStreak.length)) {
-                    longestWinStreak = PlayerStreak(name, newLength, streakStart, date)
+                    longestWinStreak = PlayerStreak(name, newLength, streakStart, date, isWin = true)
                 }
                 if (isLoss && (longestLossStreak == null || newLength > longestLossStreak.length)) {
-                    longestLossStreak = PlayerStreak(name, newLength, streakStart, date)
+                    longestLossStreak = PlayerStreak(name, newLength, streakStart, date, isWin = false)
                 }
             } else {
                 currentStreakPlayer.remove(name)
@@ -71,21 +71,23 @@ fun computePokerRecords(sessions: List<SessionWithEntries>): PokerRecords {
         }
     }
 
-    val longestActiveWinStreak = currentStreakPlayer
-        .filterValues { it }
-        .keys
-        .maxByOrNull { currentStreakLength.getValue(it) }
-        ?.let { name ->
-            PlayerStreak(name, currentStreakLength.getValue(name), currentStreakStart.getValue(name), currentStreakEnd.getValue(name))
-        }
+    val activeStreaksByPlayer = currentStreakPlayer.keys.associateWith { name ->
+        PlayerStreak(
+            playerName = name,
+            length = currentStreakLength.getValue(name),
+            startDate = currentStreakStart.getValue(name),
+            endDate = currentStreakEnd.getValue(name),
+            isWin = currentStreakPlayer.getValue(name),
+        )
+    }
 
-    val longestActiveLossStreak = currentStreakPlayer
-        .filterValues { !it }
-        .keys
-        .maxByOrNull { currentStreakLength.getValue(it) }
-        ?.let { name ->
-            PlayerStreak(name, currentStreakLength.getValue(name), currentStreakStart.getValue(name), currentStreakEnd.getValue(name))
-        }
+    val longestActiveWinStreak = activeStreaksByPlayer.values
+        .filter { it.isWin }
+        .maxByOrNull { it.length }
+
+    val longestActiveLossStreak = activeStreaksByPlayer.values
+        .filterNot { it.isWin }
+        .maxByOrNull { it.length }
 
     val mostSessionsPlayed = sessionsPlayed.maxByOrNull { it.value }?.let { (name, count) ->
         PlayerWithSessionCount(
@@ -121,6 +123,7 @@ fun computePokerRecords(sessions: List<SessionWithEntries>): PokerRecords {
         longestLossStreak = longestLossStreak,
         longestActiveWinStreak = longestActiveWinStreak,
         longestActiveLossStreak = longestActiveLossStreak,
+        activeStreaksByPlayer = activeStreaksByPlayer,
         highestBalance = highestBalance,
         lowestBalance = lowestBalance,
         mostSessionsPlayed = mostSessionsPlayed,

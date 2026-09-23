@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -31,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,20 +45,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akreutz.poker.PokerApplication
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
 import com.akreutz.poker.data.model.PlayerWithSessionCount
 import com.akreutz.poker.data.model.SessionEntryWithPlayer
+import com.akreutz.poker.data.model.SessionResult
 import com.akreutz.poker.data.model.SessionWithEntries
+import com.akreutz.poker.ui.common.SessionHighlights
 import com.akreutz.poker.ui.common.formatCents
 import com.akreutz.poker.ui.common.parseCentsInput
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 
 @Composable
 fun CurrentSessionScreen(modifier: Modifier = Modifier) {
@@ -67,6 +77,7 @@ fun CurrentSessionScreen(modifier: Modifier = Modifier) {
     val showPlayerSelection by viewModel.showPlayerSelection.collectAsState()
     val showConcludeDialog by viewModel.showConcludeDialog.collectAsState()
     val players by viewModel.players.collectAsState()
+    val sessionResult by viewModel.sessionResult.collectAsState()
 
     if (showPlayerSelection) {
         PlayerSelectionDialog(
@@ -86,6 +97,13 @@ fun CurrentSessionScreen(modifier: Modifier = Modifier) {
                 onDismiss = { viewModel.dismissConcludeDialog() },
             )
         }
+    }
+
+    sessionResult?.let { result ->
+        SessionResultDialog(
+            result = result,
+            onDismiss = { viewModel.dismissSessionResult() },
+        )
     }
 
     val session = openSession
@@ -382,6 +400,135 @@ private fun ConcludeSessionDialog(
             }
         },
     )
+}
+
+private val RESULT_DATE_FORMATTER =
+    DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.GERMANY)
+private val RESULT_POSITIVE_COLOR = Color(0xFF2E7D32)
+
+@Composable
+private fun SessionResultDialog(
+    result: SessionResult,
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(
+                modifier = Modifier
+                    .background(
+                        Brush.verticalGradient(
+                            0f to MaterialTheme.colorScheme.primaryContainer,
+                            0.46f to MaterialTheme.colorScheme.surface,
+                        )
+                    )
+                    .padding(top = 24.dp, bottom = 8.dp),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Casino,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.size(12.dp))
+                    Text(
+                        text = "Session concluded",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.size(2.dp))
+                    Text(
+                        text = "${result.outcomes.size} players · ${result.sessionDate.format(RESULT_DATE_FORMATTER)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                ) {
+                    result.outcomes.forEachIndexed { index, outcome ->
+                        if (index > 0) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "${index + 1}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    )
+                                }
+                                Spacer(modifier = Modifier.size(10.dp))
+                                Text(
+                                    text = outcome.playerName,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                            Text(
+                                text = formatCents(outcome.deltaCents),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = when {
+                                    outcome.deltaCents > 0 -> RESULT_POSITIVE_COLOR
+                                    outcome.deltaCents < 0 -> MaterialTheme.colorScheme.error
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            )
+                        }
+                    }
+                }
+
+                if (result.newRecords.isNotEmpty() || result.streakUpdates.isNotEmpty()) {
+                    Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
+                        SessionHighlights(result)
+                    }
+                }
+
+                Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("OK")
+                    }
+                }
+            }
+        }
+    }
 }
 
 private const val DEFAULT_BUY_IN_CENTS = 400L

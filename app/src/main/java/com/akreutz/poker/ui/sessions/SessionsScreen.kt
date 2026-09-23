@@ -25,6 +25,7 @@ fun SessionsScreen(modifier: Modifier = Modifier) {
         factory = SessionsViewModel.Factory(application.repository),
     )
     val sessions by viewModel.sessions.collectAsState()
+    val sessionResultsById by viewModel.sessionResultsById.collectAsState()
 
     if (sessions.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -41,6 +42,7 @@ fun SessionsScreen(modifier: Modifier = Modifier) {
         itemsIndexed(sessions, key = { _, session -> session.session.id }) { _, session ->
             SessionCard(
                 sessionWithEntries = session,
+                sessionResult = sessionResultsById[session.session.id],
                 onDelete = { viewModel.deleteSession(session.session) },
             )
         }

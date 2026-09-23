@@ -12,32 +12,83 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Felt80,
+    onPrimary = Felt20,
+    primaryContainer = Felt30,
+    onPrimaryContainer = Felt90,
+    inversePrimary = Felt40,
+
+    secondary = FeltGrey80,
+    onSecondary = FeltGrey20,
+    secondaryContainer = FeltGrey30,
+    onSecondaryContainer = FeltGrey90,
+
+    tertiary = Gold80,
+    onTertiary = Gold20,
+    tertiaryContainer = Gold30,
+    onTertiaryContainer = Gold90,
+
+    error = Red80,
+    onError = Red20,
+    errorContainer = Red30,
+    onErrorContainer = Red90,
+
+    background = Neutral10,
+    onBackground = Neutral90,
+    surface = Neutral10,
+    onSurface = Neutral90,
+    surfaceVariant = NeutralVariant30,
+    onSurfaceVariant = NeutralVariant80,
+    surfaceTint = Felt80,
+    inverseSurface = Neutral90,
+    inverseOnSurface = Neutral20,
+    outline = NeutralVariant60,
+    outlineVariant = NeutralVariant30,
+    scrim = Neutral0,
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = Felt40,
+    onPrimary = Felt100,
+    primaryContainer = Felt90,
+    onPrimaryContainer = Felt10,
+    inversePrimary = Felt80,
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    secondary = FeltGrey40,
+    onSecondary = FeltGrey100,
+    secondaryContainer = FeltGrey90,
+    onSecondaryContainer = FeltGrey10,
+
+    tertiary = Gold40,
+    onTertiary = Gold100,
+    tertiaryContainer = Gold90,
+    onTertiaryContainer = Gold10,
+
+    error = Red40,
+    onError = Red100,
+    errorContainer = Red90,
+    onErrorContainer = Red10,
+
+    background = Neutral99,
+    onBackground = Neutral10,
+    surface = Neutral99,
+    onSurface = Neutral10,
+    surfaceVariant = NeutralVariant90,
+    onSurfaceVariant = NeutralVariant30,
+    surfaceTint = Felt40,
+    inverseSurface = Neutral20,
+    inverseOnSurface = Neutral95,
+    outline = NeutralVariant50,
+    outlineVariant = NeutralVariant80,
+    scrim = Neutral0,
 )
 
 @Composable
 fun PokerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Dynamic color is available on Android 12+, but disabled by default so the app's
+    // felt-green brand color is used instead of a wallpaper-derived palette.
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

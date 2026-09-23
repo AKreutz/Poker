@@ -13,6 +13,7 @@ data class PlayerStreak(
     val length: Int,
     val startDate: LocalDate,
     val endDate: LocalDate,
+    val isWin: Boolean,
 )
 
 data class PlayerBalancePoint(
@@ -38,6 +39,7 @@ data class PokerRecords(
     val longestLossStreak: PlayerStreak?,
     val longestActiveWinStreak: PlayerStreak?,
     val longestActiveLossStreak: PlayerStreak?,
+    val activeStreaksByPlayer: Map<String, PlayerStreak>,
     val highestBalance: PlayerBalancePoint?,
     val lowestBalance: PlayerBalancePoint?,
     val mostSessionsPlayed: PlayerWithSessionCount?,
