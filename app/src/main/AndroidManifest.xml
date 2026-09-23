@@ -16,8 +16,10 @@
         android:theme="@style/Theme.Poker">
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:exported="true"
             android:label="@string/app_name"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.Poker"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.akreutz.poker.R
 
@@ -15,6 +16,7 @@ enum class PokerDestination(
 ) {
     Overview(route = "home", label = "Overview", iconRes = R.drawable.ic_playing_cards),
     Stats(route = "stats", label = "Stats", icon = Icons.Filled.BarChart),
+    Graphs(route = "graphs", label = "Graphs", icon = Icons.Filled.ShowChart),
     Sessions(route = "sessions", label = "Sessions", icon = Icons.AutoMirrored.Filled.List),
 }
 

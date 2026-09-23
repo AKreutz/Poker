@@ -37,7 +37,9 @@ class MainActivity : ComponentActivity() {
             consentResultLauncher.launch(intent)
         }
         lifecycleScope.launch {
-            app.authManager.signIn()
+            if (app.authManager.signedInAccount == null) {
+                app.authManager.signIn()
+            }
             app.syncInBackground()
         }
     }

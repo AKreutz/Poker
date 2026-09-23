@@ -1,14 +1,18 @@
 package com.akreutz.poker.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
@@ -22,7 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -39,6 +45,9 @@ import com.akreutz.poker.PokerApplication
 import com.akreutz.poker.SyncState
 import com.akreutz.poker.navigation.PokerDestination
 import com.akreutz.poker.navigation.PokerRoutes
+import com.akreutz.poker.ui.graphs.FullScreenGraphOverlay
+import com.akreutz.poker.ui.graphs.GraphsFullScreenState
+import com.akreutz.poker.ui.graphs.GraphsScreen
 import com.akreutz.poker.ui.home.OverviewScreen
 import com.akreutz.poker.ui.sessions.SessionsScreen
 import com.akreutz.poker.ui.stats.PlayerDetailScreen
@@ -74,85 +83,109 @@ fun PokerApp() {
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text(if (isPlayerDetail) "Player Stats" else currentTab.label) },
-                navigationIcon = {
-                    if (isPlayerDetail) {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
+    var graphsState by remember { mutableStateOf<GraphsFullScreenState?>(null) }
+    var fullScreenGraphState by remember { mutableStateOf<GraphsFullScreenState?>(null) }
+    val isGraphsTab = currentTab == PokerDestination.Graphs && !isPlayerDetail
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            floatingActionButton = {
+                val state = graphsState
+                if (isGraphsTab && state != null) {
+                    FloatingActionButton(onClick = { fullScreenGraphState = state }) {
+                        Icon(Icons.Filled.Fullscreen, contentDescription = "Fullscreen")
                     }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { application.syncNow() },
-                        enabled = syncState != SyncState.Syncing,
-                    ) {
-                        if (syncState == SyncState.Syncing) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else {
-                            BadgedBox(
-                                badge = { if (hasUnsyncedChanges) Badge() },
-                            ) {
-                                Icon(Icons.Filled.Sync, contentDescription = "Sync")
+                }
+            },
+            topBar = {
+                TopAppBar(
+                    title = { Text(if (isPlayerDetail) "Player Stats" else currentTab.label) },
+                    navigationIcon = {
+                        if (isPlayerDetail) {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                             }
                         }
-                    }
-                },
-            )
-        },
-        bottomBar = {
-            NavigationBar {
-                PokerDestination.entries.forEach { destination ->
-                    NavigationBarItem(
-                        selected = destination == currentTab,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            val iconRes = destination.iconRes
-                            if (iconRes != null) {
-                                Icon(painterResource(iconRes), contentDescription = destination.label)
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = { application.syncNow() },
+                            enabled = syncState != SyncState.Syncing,
+                        ) {
+                            if (syncState == SyncState.Syncing) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
                             } else {
-                                Icon(destination.icon!!, contentDescription = destination.label)
+                                BadgedBox(
+                                    badge = { if (hasUnsyncedChanges) Badge() },
+                                ) {
+                                    Icon(Icons.Filled.Sync, contentDescription = "Sync")
+                                }
                             }
+                        }
+                    },
+                )
+            },
+            bottomBar = {
+                NavigationBar {
+                    PokerDestination.entries.forEach { destination ->
+                        NavigationBarItem(
+                            selected = destination == currentTab,
+                            onClick = {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = {
+                                val iconRes = destination.iconRes
+                                if (iconRes != null) {
+                                    Icon(painterResource(iconRes), contentDescription = destination.label)
+                                } else {
+                                    Icon(destination.icon!!, contentDescription = destination.label)
+                                }
+                            },
+                            label = { Text(destination.label) }
+                        )
+                    }
+                }
+            }
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = PokerDestination.Overview.route,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable(PokerDestination.Overview.route) { OverviewScreen() }
+                composable(PokerDestination.Stats.route) {
+                    StatsScreen(
+                        onPlayerClick = { playerId ->
+                            navController.navigate(PokerRoutes.playerDetail(playerId))
                         },
-                        label = { Text(destination.label) }
                     )
+                }
+                composable(PokerDestination.Graphs.route) {
+                    GraphsScreen(onStateChanged = { graphsState = it })
+                }
+                composable(PokerDestination.Sessions.route) { SessionsScreen() }
+                composable(
+                    route = PokerRoutes.PLAYER_DETAIL,
+                    arguments = listOf(navArgument("playerId") { type = NavType.StringType }),
+                ) { backStackEntry ->
+                    val playerId = backStackEntry.arguments?.getString("playerId").orEmpty()
+                    PlayerDetailScreen(playerId = playerId)
                 }
             }
         }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = PokerDestination.Overview.route,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(PokerDestination.Overview.route) { OverviewScreen() }
-            composable(PokerDestination.Stats.route) {
-                StatsScreen(
-                    onPlayerClick = { playerId ->
-                        navController.navigate(PokerRoutes.playerDetail(playerId))
-                    },
-                )
-            }
-            composable(PokerDestination.Sessions.route) { SessionsScreen() }
-            composable(
-                route = PokerRoutes.PLAYER_DETAIL,
-                arguments = listOf(navArgument("playerId") { type = NavType.StringType }),
-            ) { backStackEntry ->
-                val playerId = backStackEntry.arguments?.getString("playerId").orEmpty()
-                PlayerDetailScreen(playerId = playerId)
-            }
+
+        fullScreenGraphState?.let { state ->
+            FullScreenGraphOverlay(
+                state = state,
+                onDismiss = { fullScreenGraphState = null },
+            )
         }
     }
 }

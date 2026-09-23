@@ -116,6 +116,7 @@ dependencies {
         exclude(group = "org.apache.httpcomponents")
     }
     implementation(libs.google.http.client.gson)
+    implementation(libs.vico.compose.m3)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
