@@ -1,27 +1,45 @@
 package com.akreutz.poker.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akreutz.poker.PokerApplication
@@ -32,6 +50,7 @@ import com.akreutz.poker.ui.common.formatCents
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToLong
 
 private val RECORD_DATE_FORMATTER =
@@ -98,41 +117,210 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     }
 }
 
+private const val BALANCE_CARD_MIN_SESSIONS_DEFAULT = 5
+private const val BALANCE_CARD_MIN_SESSIONS_EXPANDED = 2
+private val POSITIVE_COLOR = Color(0xFF2E7D32)
+
 @Composable
 private fun BalanceCard(playerBalances: List<PlayerTotals>) {
     if (playerBalances.isEmpty()) {
         return
     }
 
+    var expandLevel by remember { mutableIntStateOf(0) }
+
+    val minSessions = when (expandLevel) {
+        0 -> BALANCE_CARD_MIN_SESSIONS_DEFAULT
+        1 -> BALANCE_CARD_MIN_SESSIONS_EXPANDED
+        else -> 0
+    }
+    val visibleBalances = playerBalances
+        .filter { it.sessionsPlayed > minSessions }
+        .sortedByDescending { it.totalDeltaCents }
+    val canExpandFurther = expandLevel < 2 && visibleBalances.size < playerBalances.size
+    val canCollapse = expandLevel > 0
+    val maxAbsDelta = visibleBalances.maxOfOrNull { abs(it.totalDeltaCents) } ?: 0L
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            playerBalances.forEachIndexed { index, playerTotals ->
-                if (index > 0) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            EqualWidthAmountColumn(
+                amountTexts = visibleBalances.map { formatCents(it.totalDeltaCents) },
+            ) { amountWidth ->
+                visibleBalances.forEachIndexed { index, playerTotals ->
+                    if (index > 0) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                    BalanceRow(
+                        rank = index + 1,
+                        playerTotals = playerTotals,
+                        maxAbsDelta = maxAbsDelta,
+                        amountColumnWidth = amountWidth,
+                    )
                 }
+            }
+            if (canExpandFurther || canCollapse) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = playerTotals.playerName,
-                        style = MaterialTheme.typography.bodyLarge,
+                        text = "${visibleBalances.size} of ${playerBalances.size} shown",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    val delta = playerTotals.totalDeltaCents
-                    Text(
-                        text = formatCents(delta),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = when {
-                            delta > 0 -> Color(0xFF2E7D32)
-                            delta < 0 -> MaterialTheme.colorScheme.error
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    )
+                    Row {
+                        if (canCollapse) {
+                            TextButton(onClick = { expandLevel = 0 }) {
+                                Text("Show less")
+                                Icon(Icons.Filled.KeyboardArrowUp, contentDescription = null)
+                            }
+                        }
+                        if (canExpandFurther) {
+                            TextButton(onClick = { expandLevel += 1 }) {
+                                Text("Show more")
+                                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = null)
+                            }
+                        }
+                    }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BalanceRow(
+    rank: Int,
+    playerTotals: PlayerTotals,
+    maxAbsDelta: Long,
+    amountColumnWidth: Dp,
+) {
+    val delta = playerTotals.totalDeltaCents
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = rank.toString(),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(20.dp),
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 12.dp),
+        ) {
+            Text(
+                text = playerTotals.playerName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            DivergingBar(
+                delta = delta,
+                maxAbsDelta = maxAbsDelta,
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .fillMaxWidth()
+                    .height(6.dp),
+            )
+        }
+        Text(
+            text = formatCents(delta),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.End,
+            color = when {
+                delta > 0 -> POSITIVE_COLOR
+                delta < 0 -> MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            modifier = Modifier.width(amountColumnWidth),
+        )
+    }
+}
+
+@Composable
+private fun DivergingBar(delta: Long, maxAbsDelta: Long, modifier: Modifier = Modifier) {
+    val fraction = if (maxAbsDelta == 0L) 0f else (abs(delta).toFloat() / maxAbsDelta.toFloat()).coerceIn(0f, 1f)
+    Row(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
+        // Left half: positive bars are drawn here so their bar sits flush against the
+        // center line and grows outward (to the left) as the fraction increases.
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            if (delta < 0 && fraction > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(fraction)
+                        .clip(RoundedCornerShape(topStart = 3.dp, bottomStart = 3.dp))
+                        .background(MaterialTheme.colorScheme.error),
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(1.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant),
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            if (delta > 0 && fraction > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(fraction)
+                        .clip(RoundedCornerShape(topEnd = 3.dp, bottomEnd = 3.dp))
+                        .background(POSITIVE_COLOR),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Measures [amountTexts] once and reports the widest amount's width to [content], so every row's
+ * amount column (and therefore every diverging bar's start point) lines up regardless of how many
+ * digits an individual balance has.
+ */
+@Composable
+private fun EqualWidthAmountColumn(
+    amountTexts: List<String>,
+    content: @Composable (amountWidth: Dp) -> Unit,
+) {
+    SubcomposeLayout { constraints ->
+        val amountWidthPx = subcompose("amounts") {
+            amountTexts.forEach {
+                Text(text = it, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+            }
+        }.maxOfOrNull { it.measure(Constraints()).width } ?: 0
+        val amountWidthDp = amountWidthPx.toDp()
+
+        val contentPlaceables = subcompose("content") { content(amountWidthDp) }
+            .map { it.measure(constraints) }
+
+        val width = contentPlaceables.maxOfOrNull { it.width } ?: 0
+        val height = contentPlaceables.sumOf { it.height }
+        layout(width, height) {
+            var y = 0
+            contentPlaceables.forEach {
+                it.placeRelative(0, y)
+                y += it.height
             }
         }
     }

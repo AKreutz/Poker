@@ -12,11 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
-private const val MIN_SESSIONS_FOR_BALANCE = 5
-
 class HomeViewModel(repository: PokerRepository) : ViewModel() {
     val playerBalances: StateFlow<List<PlayerTotals>> = repository.observeAllTimePlayerTotals()
-        .map { totals -> totals.filter { it.sessionsPlayed > MIN_SESSIONS_FOR_BALANCE } }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
