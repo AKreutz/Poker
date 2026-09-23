@@ -34,12 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akreutz.poker.PokerApplication
@@ -135,7 +131,7 @@ private fun BalanceCard(playerBalances: List<PlayerTotals>) {
         else -> 0
     }
     val visibleBalances = playerBalances
-        .filter { it.sessionsPlayed > minSessions }
+        .filter { it.sessionsPlayed >= minSessions }
         .sortedByDescending { it.totalDeltaCents }
     val canExpandFurther = expandLevel < 2 && visibleBalances.size < playerBalances.size
     val canCollapse = expandLevel > 0
@@ -146,20 +142,15 @@ private fun BalanceCard(playerBalances: List<PlayerTotals>) {
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            EqualWidthAmountColumn(
-                amountTexts = visibleBalances.map { formatCents(it.totalDeltaCents) },
-            ) { amountWidth ->
-                visibleBalances.forEachIndexed { index, playerTotals ->
-                    if (index > 0) {
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    }
-                    BalanceRow(
-                        rank = index + 1,
-                        playerTotals = playerTotals,
-                        maxAbsDelta = maxAbsDelta,
-                        amountColumnWidth = amountWidth,
-                    )
+            visibleBalances.forEachIndexed { index, playerTotals ->
+                if (index > 0) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
+                BalanceRow(
+                    rank = index + 1,
+                    playerTotals = playerTotals,
+                    maxAbsDelta = maxAbsDelta,
+                )
             }
             if (canExpandFurther || canCollapse) {
                 Row(
@@ -199,7 +190,6 @@ private fun BalanceRow(
     rank: Int,
     playerTotals: PlayerTotals,
     maxAbsDelta: Long,
-    amountColumnWidth: Dp,
 ) {
     val delta = playerTotals.totalDeltaCents
     Row(
@@ -212,16 +202,27 @@ private fun BalanceRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(20.dp),
         )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 12.dp),
-        ) {
-            Text(
-                text = playerTotals.playerName,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = playerTotals.playerName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = formatCents(delta),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = when {
+                        delta > 0 -> POSITIVE_COLOR
+                        delta < 0 -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
             DivergingBar(
                 delta = delta,
                 maxAbsDelta = maxAbsDelta,
@@ -231,18 +232,6 @@ private fun BalanceRow(
                     .height(6.dp),
             )
         }
-        Text(
-            text = formatCents(delta),
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.End,
-            color = when {
-                delta > 0 -> POSITIVE_COLOR
-                delta < 0 -> MaterialTheme.colorScheme.error
-                else -> MaterialTheme.colorScheme.onSurfaceVariant
-            },
-            modifier = Modifier.width(amountColumnWidth),
-        )
     }
 }
 
@@ -288,39 +277,6 @@ private fun DivergingBar(delta: Long, maxAbsDelta: Long, modifier: Modifier = Mo
                         .clip(RoundedCornerShape(topEnd = 3.dp, bottomEnd = 3.dp))
                         .background(POSITIVE_COLOR),
                 )
-            }
-        }
-    }
-}
-
-/**
- * Measures [amountTexts] once and reports the widest amount's width to [content], so every row's
- * amount column (and therefore every diverging bar's start point) lines up regardless of how many
- * digits an individual balance has.
- */
-@Composable
-private fun EqualWidthAmountColumn(
-    amountTexts: List<String>,
-    content: @Composable (amountWidth: Dp) -> Unit,
-) {
-    SubcomposeLayout { constraints ->
-        val amountWidthPx = subcompose("amounts") {
-            amountTexts.forEach {
-                Text(text = it, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-            }
-        }.maxOfOrNull { it.measure(Constraints()).width } ?: 0
-        val amountWidthDp = amountWidthPx.toDp()
-
-        val contentPlaceables = subcompose("content") { content(amountWidthDp) }
-            .map { it.measure(constraints) }
-
-        val width = contentPlaceables.maxOfOrNull { it.width } ?: 0
-        val height = contentPlaceables.sumOf { it.height }
-        layout(width, height) {
-            var y = 0
-            contentPlaceables.forEach {
-                it.placeRelative(0, y)
-                y += it.height
             }
         }
     }
