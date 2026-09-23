@@ -1,5 +1,6 @@
 package com.akreutz.poker.ui.currentsession
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -47,12 +47,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.akreutz.poker.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akreutz.poker.PokerApplication
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
@@ -432,20 +437,18 @@ private fun SessionResultDialog(
                         .padding(horizontal = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Box(
+                    val context = LocalContext.current
+                    val appIconPainter = remember {
+                        val drawable = ContextCompat.getDrawable(context, R.mipmap.ic_launcher_round)!!
+                        BitmapPainter(drawable.toBitmap(width = 156, height = 156).asImageBitmap())
+                    }
+                    Image(
+                        painter = appIconPainter,
+                        contentDescription = null,
                         modifier = Modifier
                             .size(52.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Casino,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
+                            .clip(CircleShape),
+                    )
                     Spacer(modifier = Modifier.size(12.dp))
                     Text(
                         text = "Session concluded",
