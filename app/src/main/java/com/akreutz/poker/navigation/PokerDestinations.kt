@@ -14,7 +14,7 @@ enum class PokerDestination(
     val icon: ImageVector? = null,
     @DrawableRes val iconRes: Int? = null,
 ) {
-    Overview(route = "home", label = "Overview", iconRes = R.drawable.ic_playing_cards),
+    Overview(route = "home", label = "Home", iconRes = R.drawable.ic_playing_cards),
     Stats(route = "stats", label = "Stats", icon = Icons.Filled.BarChart),
     Graphs(route = "graphs", label = "Graphs", icon = Icons.Filled.ShowChart),
     Sessions(route = "sessions", label = "Sessions", icon = Icons.AutoMirrored.Filled.List),

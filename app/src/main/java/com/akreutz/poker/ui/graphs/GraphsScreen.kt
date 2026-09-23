@@ -1,7 +1,7 @@
 package com.akreutz.poker.ui.graphs
 
-import android.app.Activity
 import android.content.pm.ActivityInfo
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -283,7 +283,7 @@ data class GraphsFullScreenState(
 
 @Composable
 fun FullScreenGraphOverlay(state: GraphsFullScreenState, onDismiss: () -> Unit) {
-    val activity = LocalContext.current as? Activity
+    val activity = LocalActivity.current
 
     DisposableEffect(Unit) {
         val originalOrientation = activity?.requestedOrientation
