@@ -96,4 +96,9 @@ class PokerRepository(
         sessionEntryDao.update(entry.copy(isDeleted = true, updatedAt = Instant.now()))
         localChangeTracker.markDirty()
     }
+
+    suspend fun deletePlayer(player: PlayerEntity) {
+        playerDao.update(player.copy(isDeleted = true, updatedAt = Instant.now()))
+        localChangeTracker.markDirty()
+    }
 }
