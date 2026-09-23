@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
 import com.akreutz.poker.data.model.PlayerTotals
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +19,14 @@ interface SessionEntryDao {
 
     @Update
     suspend fun update(entry: SessionEntryEntity)
+
+    /** Insert-or-replace used when merging a remote snapshot into the local database. */
+    @Upsert
+    suspend fun upsertAll(entries: List<SessionEntryEntity>)
+
+    /** All rows including soft-deleted ones, for building a full sync snapshot. */
+    @Query("SELECT * FROM session_entries")
+    suspend fun getAll(): List<SessionEntryEntity>
 
     @Query("SELECT * FROM session_entries WHERE sessionId = :sessionId AND isDeleted = 0")
     fun observeEntriesForSession(sessionId: String): Flow<List<SessionEntryEntity>>

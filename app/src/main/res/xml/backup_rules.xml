@@ -6,8 +6,9 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- The Room database is restored from Google Drive on first sync; a stale
+         backup would otherwise reappear on "clean" installs and mask real bugs. -->
+    <exclude domain="database" path="poker.db" />
+    <exclude domain="database" path="poker.db-wal" />
+    <exclude domain="database" path="poker.db-shm" />
 </full-backup-content>

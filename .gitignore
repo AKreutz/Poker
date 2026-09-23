@@ -13,6 +13,3 @@
 .externalNativeBuild
 .cxx
 local.properties
-
-# Session data (not tracked)
-/app/src/main/assets/Poker.csv

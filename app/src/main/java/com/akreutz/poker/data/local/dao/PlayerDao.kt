@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.akreutz.poker.data.local.entity.PlayerEntity
 import com.akreutz.poker.data.model.PlayerWithSessionCount
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +19,14 @@ interface PlayerDao {
 
     @Update
     suspend fun update(player: PlayerEntity)
+
+    /** Insert-or-replace used when merging a remote snapshot into the local database. */
+    @Upsert
+    suspend fun upsertAll(players: List<PlayerEntity>)
+
+    /** All rows including soft-deleted ones, for building a full sync snapshot. */
+    @Query("SELECT * FROM players")
+    suspend fun getAll(): List<PlayerEntity>
 
     @Query(
         """

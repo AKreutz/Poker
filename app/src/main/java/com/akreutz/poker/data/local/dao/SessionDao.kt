@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import androidx.room.Upsert
 import com.akreutz.poker.data.local.entity.SessionEntity
 import com.akreutz.poker.data.local.entity.SessionStatus
 import com.akreutz.poker.data.model.SessionWithEntries
@@ -21,6 +22,14 @@ interface SessionDao {
 
     @Update
     suspend fun update(session: SessionEntity)
+
+    /** Insert-or-replace used when merging a remote snapshot into the local database. */
+    @Upsert
+    suspend fun upsertAll(sessions: List<SessionEntity>)
+
+    /** All rows including soft-deleted ones, for building a full sync snapshot. */
+    @Query("SELECT * FROM sessions")
+    suspend fun getAll(): List<SessionEntity>
 
     @Query("SELECT * FROM sessions WHERE isDeleted = 0 ORDER BY date DESC")
     fun observeActiveSessions(): Flow<List<SessionEntity>>
@@ -41,7 +50,4 @@ interface SessionDao {
 
     @Query("SELECT * FROM sessions WHERE date = :date AND isDeleted = 0 LIMIT 1")
     suspend fun findByDate(date: LocalDate): SessionEntity?
-
-    @Query("SELECT COUNT(*) FROM sessions")
-    suspend fun count(): Int
 }
