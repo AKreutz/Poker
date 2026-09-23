@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="614.40308"
+   height="583.79358"
+   viewBox="0 0 614.40308 583.79358"
+   version="1.1"
+   id="svg2"
+   sodipodi:docname="ic_launcher_foreground.svg"
+   inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="namedview2"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2.135131"
+     inkscape:cx="97.417909"
+     inkscape:cy="322.46265"
+     inkscape:window-width="3840"
+     inkscape:window-height="2071"
+     inkscape:window-x="1911"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg2" />
+  <path
+     id="path9"
+     style="fill:#faf7f0;fill-opacity:1"
+     inkscape:label="front_card"
+     d="M 624.87386 -879.75103 C 614.62386 -880.25103 604.33337 -878.66651 594.00004 -874.99984 L 292.99998 -765.00057 C 272.33331 -757.66724 257.33303 -743.8341 247.9997 -723.50077 C 238.66637 -703.16743 237.66669 -682.66637 245.00002 -661.99971 L 394.00021 -173.00108 C 401.33354 -152.33441 415.33414 -137.33413 436.00081 -128.0008 C 456.66748 -118.66746 477.33345 -117.66778 498.00012 -125.00112 L 525.99883 -125.00112 L 826.99889 -235.00039 C 847.66556 -242.33372 862.66583 -256.16686 871.99917 -276.50019 C 881.3325 -296.83353 882.33218 -317.33459 874.99885 -338.00125 L 697.00091 -826.99988 C 689.66757 -847.66655 675.83443 -862.66683 655.5011 -872.00016 C 645.33443 -876.66683 635.12386 -879.25103 624.87386 -879.75103 z M 620.9997 -800.00023 L 799.99923 -310.00001 L 498.00012 -200.00074 L 319.99964 -690.00095 L 620.9997 -800.00023 z "
+     transform="matrix(0.7683112,0,0,0.7683112,-61.587821,675.99093)" />
+  <path
+     d="m 608,-368 46,-166 -142,-98 -46,166 z"
+     transform="matrix(0.7683112,0,0,0.7683112,-61.587821,675.99093)"
+     id="path7"
+     style="fill:#c0392b;fill-opacity:1"
+     inkscape:label="diamond" />
+  <path
+     d="m 320,-120 q -33,0 -56.5,-24 -23.5,-24 -23.5,-57 v -239 l 107,294 q 3,7 5,13.5 2,6.5 7,12.5 z"
+     transform="matrix(0.7683112,0,0,0.7683112,-61.587821,675.99093)"
+     id="path6"
+     style="fill:#faf7f0;fill-opacity:1"
+     inkscape:label="middle_card" />
+  <path
+     d="m 160,-207 -33,-16 Q 96,-236 85,-267.5 74,-299 88,-330 l 72,-156 z"
+     transform="matrix(0.7683112,0,0,0.7683112,-61.587821,675.99093)"
+     id="path1"
+     style="fill:#faf7f0;fill-opacity:1"
+     inkscape:label="back_card" />
+</svg>
