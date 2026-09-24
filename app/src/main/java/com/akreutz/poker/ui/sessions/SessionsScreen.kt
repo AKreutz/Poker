@@ -45,6 +45,7 @@ fun SessionsScreen(modifier: Modifier = Modifier) {
                 sessionWithEntries = session,
                 sessionResult = sessionResultsById[session.session.id],
                 onDelete = { viewModel.deleteSession(session.session) },
+                onRemoveEntry = { entry -> viewModel.removePlayerFromSession(entry) },
             )
         }
     }

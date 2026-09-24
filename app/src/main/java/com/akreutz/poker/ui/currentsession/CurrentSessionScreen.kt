@@ -76,6 +76,7 @@ import com.akreutz.poker.data.model.SessionResult
 import com.akreutz.poker.data.model.SessionWithEntries
 import com.akreutz.poker.ui.common.SessionHighlights
 import com.akreutz.poker.ui.common.formatCents
+import com.akreutz.poker.ui.common.formatDuration
 import com.akreutz.poker.ui.common.formatHands
 import com.akreutz.poker.ui.common.parseCentsInput
 import java.time.format.DateTimeFormatter
@@ -90,6 +91,7 @@ fun CurrentSessionScreen(modifier: Modifier = Modifier) {
     )
     val openSession by viewModel.openSession.collectAsState()
     val showPlayerSelection by viewModel.showPlayerSelection.collectAsState()
+    val showAddPlayer by viewModel.showAddPlayer.collectAsState()
     val showConcludeDialog by viewModel.showConcludeDialog.collectAsState()
     val players by viewModel.players.collectAsState()
     val sessionResult by viewModel.sessionResult.collectAsState()
@@ -103,6 +105,21 @@ fun CurrentSessionScreen(modifier: Modifier = Modifier) {
             },
             onDismiss = { viewModel.dismissPlayerSelection() },
         )
+    }
+
+    if (showAddPlayer) {
+        openSession?.let { session ->
+            val playerIdsInSession = session.entries.map { it.player.id }.toSet()
+            PlayerSelectionDialog(
+                players = players.filter { it.player.id !in playerIdsInSession },
+                title = "Add player",
+                confirmLabel = "Add",
+                onConfirm = { selectedIds, newPlayerNames, buyInCents ->
+                    viewModel.confirmAddPlayer(selectedIds, newPlayerNames, buyInCents)
+                },
+                onDismiss = { viewModel.dismissAddPlayer() },
+            )
+        }
     }
 
     if (showConcludeDialog) {
@@ -186,6 +203,18 @@ fun CurrentSessionScreen(modifier: Modifier = Modifier) {
             sessionWithEntries = session,
             onIncreaseBuyIn = { entry, additionalCents -> viewModel.increaseBuyIn(entry, additionalCents) },
         )
+        OutlinedButton(
+            onClick = { viewModel.addPlayerToSession() },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text("Add player")
+        }
         Text(
             text = "Hands won per player",
             style = MaterialTheme.typography.labelMedium,
@@ -265,7 +294,9 @@ private fun PlayerBuyInList(
                 HorizontalDivider()
             }
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -289,6 +320,7 @@ private fun PlayerBuyInList(
                 }
             }
         }
+        HorizontalDivider()
     }
 
     val target = entryForBuyInDialog
@@ -485,7 +517,6 @@ private fun ConcludeSessionDialog(
     } else {
         null
     }
-
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Conclude session") },
@@ -613,6 +644,7 @@ private fun SessionResultDialog(
                     val subtitle = buildString {
                         append("${result.outcomes.size} players · ${result.sessionDate.format(RESULT_DATE_FORMATTER)}")
                         result.handsPlayed?.let { append(" · ${formatHands(it)}") }
+                        result.duration?.let { append(" · ${formatDuration(it)}") }
                     }
                     Text(
                         text = subtitle,
@@ -707,6 +739,8 @@ private fun PlayerSelectionDialog(
     players: List<PlayerWithSessionCount>,
     onConfirm: (Set<String>, Set<String>, Long) -> Unit,
     onDismiss: () -> Unit,
+    title: String = "Select players",
+    confirmLabel: String = "Confirm",
 ) {
     var selectedPlayerIds by remember { mutableStateOf(emptySet<String>()) }
     var newPlayerNames by remember { mutableStateOf(emptySet<String>()) }
@@ -725,7 +759,7 @@ private fun PlayerSelectionDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select players") },
+        title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
@@ -810,7 +844,7 @@ private fun PlayerSelectionDialog(
                 onClick = { buyInCents?.let { onConfirm(selectedPlayerIds, newPlayerNames, it) } },
                 enabled = buyInCents != null && (selectedPlayerIds.isNotEmpty() || newPlayerNames.isNotEmpty()),
             ) {
-                Text("Confirm")
+                Text(confirmLabel)
             }
         },
         dismissButton = {

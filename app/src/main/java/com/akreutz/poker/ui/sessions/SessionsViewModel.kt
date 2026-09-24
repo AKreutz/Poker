@@ -3,6 +3,7 @@ package com.akreutz.poker.ui.sessions
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.akreutz.poker.data.local.entity.SessionEntity
+import com.akreutz.poker.data.local.entity.SessionEntryEntity
 import com.akreutz.poker.data.model.PokerRecords
 import com.akreutz.poker.data.model.SessionResult
 import com.akreutz.poker.data.model.SessionWithEntries
@@ -34,6 +35,12 @@ class SessionsViewModel(private val repository: PokerRepository) : ViewModel() {
     fun deleteSession(session: SessionEntity) {
         viewModelScope.launch {
             repository.deleteSession(session)
+        }
+    }
+
+    fun removePlayerFromSession(entry: SessionEntryEntity) {
+        viewModelScope.launch {
+            repository.softDeleteEntry(entry)
         }
     }
 }

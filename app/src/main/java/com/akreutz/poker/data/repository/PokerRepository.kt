@@ -17,6 +17,7 @@ import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 class PokerRepository(
     private val playerDao: PlayerDao,
@@ -34,6 +35,7 @@ class PokerRepository(
 
     fun observeSessionsWithEntries(): Flow<List<SessionWithEntries>> =
         sessionDao.observeSessionsWithEntries()
+            .map { sessions -> sessions.map { it.withoutDeletedEntries() } }
 
     /** All sessions regardless of status or soft-delete state, for debugging. */
     fun observeAllSessions(): Flow<List<SessionEntity>> =
@@ -44,6 +46,7 @@ class PokerRepository(
 
     fun observeOpenSession(): Flow<SessionWithEntries?> =
         sessionDao.observeSessionWithEntriesByStatus(SessionStatus.OPEN)
+            .map { it?.withoutDeletedEntries() }
 
     fun observeAllTimePlayerTotals(): Flow<List<PlayerTotals>> =
         sessionEntryDao.observeAllTimePlayerTotals()
@@ -75,8 +78,8 @@ class PokerRepository(
         localChangeTracker.markDirty()
     }
 
-    suspend fun concludeSession(session: SessionEntity) {
-        sessionDao.update(session.copy(status = SessionStatus.CONCLUDED, updatedAt = Instant.now()))
+    suspend fun concludeSession(session: SessionEntity, concludedAt: Instant = Instant.now()) {
+        sessionDao.update(session.copy(status = SessionStatus.CONCLUDED, updatedAt = concludedAt))
         localChangeTracker.markDirty()
     }
 
@@ -147,3 +150,11 @@ class PokerRepository(
         localChangeTracker.markDirty()
     }
 }
+
+/**
+ * Room's [androidx.room.Relation] used to load [SessionWithEntries.entries] has no way to
+ * express a WHERE clause, so soft-deleted entries come back embedded alongside live ones.
+ * Every read path filters them out here instead.
+ */
+private fun SessionWithEntries.withoutDeletedEntries(): SessionWithEntries =
+    copy(entries = entries.filterNot { it.entry.isDeleted })

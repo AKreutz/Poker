@@ -3,6 +3,7 @@ package com.akreutz.poker.ui.common
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,8 +39,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.akreutz.poker.data.local.entity.SessionEntryEntity
+import com.akreutz.poker.data.local.entity.SessionStatus
+import com.akreutz.poker.data.model.SessionEntryWithPlayer
 import com.akreutz.poker.data.model.SessionResult
 import com.akreutz.poker.data.model.SessionWithEntries
+import java.time.Duration
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -53,6 +58,7 @@ fun SessionCard(
     sessionResult: SessionResult? = null,
     initiallyExpanded: Boolean = false,
     onDelete: (() -> Unit)? = null,
+    onRemoveEntry: ((SessionEntryEntity) -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(initiallyExpanded) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
@@ -78,9 +84,16 @@ fun SessionCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
-                    sessionWithEntries.handsPlayed?.let { handsPlayed ->
+                    val subtitle = buildString {
+                        sessionWithEntries.handsPlayed?.let { append(formatHands(it)) }
+                        sessionDuration(sessionWithEntries)?.let { duration ->
+                            if (isNotEmpty()) append(" · ")
+                            append(formatDuration(duration))
+                        }
+                    }
+                    if (subtitle.isNotEmpty()) {
                         Text(
-                            text = formatHands(handsPlayed),
+                            text = subtitle,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -106,7 +119,7 @@ fun SessionCard(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Column {
-                        SessionEntriesList(sessionWithEntries)
+                        SessionEntriesList(sessionWithEntries, onRemoveEntry = onRemoveEntry)
                     }
                     if (sessionResult != null &&
                         (sessionResult.newRecords.isNotEmpty() || sessionResult.streakUpdates.isNotEmpty())
@@ -158,10 +171,26 @@ fun StaticSessionCard(sessionWithEntries: SessionWithEntries) {
     }
 }
 
+/**
+ * Approximates how long a session lasted from [SessionEntity.createdAt] (session start) to
+ * [SessionEntity.updatedAt] (last touched when concluded). Only meaningful once concluded, since
+ * `updatedAt` keeps moving forward while the session is still open.
+ */
+private fun sessionDuration(sessionWithEntries: SessionWithEntries): Duration? {
+    val session = sessionWithEntries.session
+    if (session.status != SessionStatus.CONCLUDED) return null
+    return Duration.between(session.createdAt, session.updatedAt).takeIfMeasurable()
+}
+
 private val SESSION_ENTRY_POSITIVE_COLOR = Color(0xFF2E7D32)
 
 @Composable
-private fun SessionEntriesList(sessionWithEntries: SessionWithEntries) {
+private fun SessionEntriesList(
+    sessionWithEntries: SessionWithEntries,
+    onRemoveEntry: ((SessionEntryEntity) -> Unit)? = null,
+) {
+    var entryPendingRemoval by remember { mutableStateOf<SessionEntryWithPlayer?>(null) }
+    val totalHandsPlayed = sessionWithEntries.handsPlayed ?: 0
     val sortedEntries = sessionWithEntries.entries.sortedByDescending { it.entry.deltaCents }
     sortedEntries.forEachIndexed { index, entryWithPlayer ->
         if (index > 0) {
@@ -172,6 +201,13 @@ private fun SessionEntriesList(sessionWithEntries: SessionWithEntries) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .let {
+                    if (onRemoveEntry != null) {
+                        it.combinedClickable(onClick = {}, onLongClick = { entryPendingRemoval = entryWithPlayer })
+                    } else {
+                        it
+                    }
+                }
                 .padding(vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -201,8 +237,14 @@ private fun SessionEntriesList(sessionWithEntries: SessionWithEntries) {
                         )
                         entry.handsWon?.let { handsWon ->
                             Spacer(modifier = Modifier.width(6.dp))
+                            val wonText = if (totalHandsPlayed > 0) {
+                                val percentage = handsWon * 100 / totalHandsPlayed
+                                "${formatHands(handsWon)} won ($percentage%)"
+                            } else {
+                                "${formatHands(handsWon)} won"
+                            }
                             Text(
-                                text = "${formatHands(handsWon)} won",
+                                text = wonText,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -226,5 +268,27 @@ private fun SessionEntriesList(sessionWithEntries: SessionWithEntries) {
                 },
             )
         }
+    }
+
+    val target = entryPendingRemoval
+    if (target != null && onRemoveEntry != null) {
+        AlertDialog(
+            onDismissRequest = { entryPendingRemoval = null },
+            title = { Text("Remove ${target.player.name}?") },
+            text = { Text("This will remove ${target.player.name} and their buy-ins from this session.") },
+            confirmButton = {
+                Button(onClick = {
+                    entryPendingRemoval = null
+                    onRemoveEntry(target.entry)
+                }) {
+                    Text("Remove")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { entryPendingRemoval = null }) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 }

@@ -1,5 +1,6 @@
 package com.akreutz.poker.data.model
 
+import java.time.Duration
 import java.time.LocalDate
 
 data class PlayerSessionOutcome(
@@ -55,6 +56,7 @@ data class SessionResult(
     val streakUpdates: List<StreakUpdate>,
     val newRecords: List<NewRecord>,
     val handsPlayed: Int? = null,
+    val duration: Duration? = null,
 )
 
 fun computeSessionResult(
@@ -75,6 +77,12 @@ fun computeSessionResult(
 
     val sessionDate = sessionWithEntries.session.date
     val playedNames = outcomes.map { it.playerName }.toSet()
+
+    // Sessions restored from a Drive snapshot can have createdAt/updatedAt collapsed to the
+    // same import timestamp, which would otherwise show as a ~0min session; treat anything
+    // under a minute as "no reliable duration" rather than displaying it.
+    val duration = Duration.between(sessionWithEntries.session.createdAt, sessionWithEntries.session.updatedAt)
+        .takeIf { it >= Duration.ofMinutes(1) }
 
     val streakUpdates = buildList {
         fun evaluate(before: PlayerStreak?, isWin: Boolean) {
@@ -136,5 +144,5 @@ fun computeSessionResult(
         }
     }
 
-    return SessionResult(sessionDate, outcomes, streakUpdates, newRecords, handsPlayed)
+    return SessionResult(sessionDate, outcomes, streakUpdates, newRecords, handsPlayed, duration)
 }

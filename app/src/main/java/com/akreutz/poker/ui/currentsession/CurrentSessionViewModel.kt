@@ -9,6 +9,7 @@ import com.akreutz.poker.data.model.SessionWithEntries
 import com.akreutz.poker.data.model.computePokerRecords
 import com.akreutz.poker.data.model.computeSessionResult
 import com.akreutz.poker.data.repository.PokerRepository
+import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,6 +35,9 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
 
     private val _showPlayerSelection = MutableStateFlow(false)
     val showPlayerSelection: StateFlow<Boolean> = _showPlayerSelection.asStateFlow()
+
+    private val _showAddPlayer = MutableStateFlow(false)
+    val showAddPlayer: StateFlow<Boolean> = _showAddPlayer.asStateFlow()
 
     private val _showConcludeDialog = MutableStateFlow(false)
     val showConcludeDialog: StateFlow<Boolean> = _showConcludeDialog.asStateFlow()
@@ -66,6 +70,30 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
 
     fun dismissPlayerSelection() {
         _showPlayerSelection.value = false
+    }
+
+    fun addPlayerToSession() {
+        _showAddPlayer.value = true
+    }
+
+    fun confirmAddPlayer(selectedPlayerIds: Set<String>, newPlayerNames: Set<String>, buyInCents: Long) {
+        val session = openSession.value?.session ?: return
+        viewModelScope.launch {
+            val newPlayerIds = newPlayerNames.map { repository.getOrCreatePlayer(it).id }
+            (selectedPlayerIds + newPlayerIds).forEach { playerId ->
+                repository.addEntry(
+                    sessionId = session.id,
+                    playerId = playerId,
+                    buyInCents = buyInCents,
+                    cashOutCents = 0,
+                )
+            }
+            _showAddPlayer.value = false
+        }
+    }
+
+    fun dismissAddPlayer() {
+        _showAddPlayer.value = false
     }
 
     fun increaseBuyIn(entry: SessionEntryEntity, additionalCents: Long) {
@@ -119,7 +147,8 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
                 val cashOutCents = cashOutsByEntryId[entryWithPlayer.entry.id] ?: return@forEach
                 repository.updateEntry(entryWithPlayer.entry.copy(cashOutCents = cashOutCents))
             }
-            repository.concludeSession(sessionWithEntries.session)
+            val concludedAt = Instant.now()
+            repository.concludeSession(sessionWithEntries.session, concludedAt)
             if (!shouldRecordHandsPlayed) {
                 repository.clearHandsWonForSession(sessionWithEntries.session.id)
             }
@@ -133,7 +162,10 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
                     entry = entryWithPlayer.entry.copy(cashOutCents = cashOutCents, handsWon = handsWon),
                 )
             }
-            val concludedSession = sessionWithEntries.copy(entries = updatedEntries)
+            val concludedSession = sessionWithEntries.copy(
+                session = sessionWithEntries.session.copy(updatedAt = concludedAt),
+                entries = updatedEntries,
+            )
 
             val sessionsAfter = repository.getSessionsWithEntries()
             val recordsAfter = computePokerRecords(sessionsAfter)
