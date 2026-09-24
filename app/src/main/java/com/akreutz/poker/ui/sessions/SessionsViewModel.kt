@@ -1,7 +1,6 @@
 package com.akreutz.poker.ui.sessions
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akreutz.poker.data.local.entity.SessionEntity
 import com.akreutz.poker.data.model.PokerRecords
@@ -35,13 +34,6 @@ class SessionsViewModel(private val repository: PokerRepository) : ViewModel() {
     fun deleteSession(session: SessionEntity) {
         viewModelScope.launch {
             repository.deleteSession(session)
-        }
-    }
-
-    class Factory(private val repository: PokerRepository) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return SessionsViewModel(repository) as T
         }
     }
 }

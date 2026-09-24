@@ -49,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.akreutz.poker.ui.SimpleViewModelFactory
 import com.akreutz.poker.PokerApplication
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
@@ -94,7 +95,7 @@ private fun bottomAxisValueFormatter(axisDates: List<LocalDate?>) = CartesianVal
 fun GraphsScreen(onStateChanged: (GraphsFullScreenState) -> Unit = {}) {
     val application = LocalContext.current.applicationContext as PokerApplication
     val viewModel: GraphsViewModel = viewModel(
-        factory = GraphsViewModel.Factory(application.repository),
+        factory = SimpleViewModelFactory { GraphsViewModel(application.repository) },
     )
     val players by viewModel.players.collectAsState()
     val uiState by viewModel.uiState.collectAsState()

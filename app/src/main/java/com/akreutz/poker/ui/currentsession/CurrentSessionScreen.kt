@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.akreutz.poker.R
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.akreutz.poker.ui.SimpleViewModelFactory
 import com.akreutz.poker.PokerApplication
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
 import com.akreutz.poker.data.model.PlayerWithSessionCount
@@ -76,7 +77,7 @@ import java.util.Locale
 fun CurrentSessionScreen(modifier: Modifier = Modifier) {
     val application = LocalContext.current.applicationContext as PokerApplication
     val viewModel: CurrentSessionViewModel = viewModel(
-        factory = CurrentSessionViewModel.Factory(application.repository),
+        factory = SimpleViewModelFactory { CurrentSessionViewModel(application.repository) },
     )
     val openSession by viewModel.openSession.collectAsState()
     val showPlayerSelection by viewModel.showPlayerSelection.collectAsState()

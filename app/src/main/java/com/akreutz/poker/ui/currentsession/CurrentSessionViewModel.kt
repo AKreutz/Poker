@@ -1,7 +1,6 @@
 package com.akreutz.poker.ui.currentsession
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
 import com.akreutz.poker.data.model.PlayerWithSessionCount
@@ -114,13 +113,6 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
         val session = openSession.value?.session ?: return
         viewModelScope.launch {
             repository.cancelSession(session)
-        }
-    }
-
-    class Factory(private val repository: PokerRepository) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return CurrentSessionViewModel(repository) as T
         }
     }
 }

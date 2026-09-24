@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.akreutz.poker.ui.SimpleViewModelFactory
 import com.akreutz.poker.PokerApplication
 import com.akreutz.poker.data.model.PlayerStreak
 import com.akreutz.poker.ui.common.RECORD_POSITIVE_COLOR
@@ -177,7 +178,7 @@ private fun PlayerStatMetric.dateText(playerStats: PlayerStats): String? {
 fun StatsScreen(modifier: Modifier = Modifier, onPlayerClick: (String) -> Unit = {}) {
     val application = LocalContext.current.applicationContext as PokerApplication
     val viewModel: StatsViewModel = viewModel(
-        factory = StatsViewModel.Factory(application.repository),
+        factory = SimpleViewModelFactory { StatsViewModel(application.repository) },
     )
     val players by viewModel.players.collectAsState()
 

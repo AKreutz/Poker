@@ -1,7 +1,6 @@
 package com.akreutz.poker.ui.stats
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akreutz.poker.data.local.entity.PlayerEntity
 import com.akreutz.poker.data.model.PlayerTotals
@@ -56,13 +55,6 @@ class StatsViewModel(private val repository: PokerRepository) : ViewModel() {
     fun deletePlayer(player: PlayerEntity) {
         viewModelScope.launch {
             repository.deletePlayer(player)
-        }
-    }
-
-    class Factory(private val repository: PokerRepository) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return StatsViewModel(repository) as T
         }
     }
 }

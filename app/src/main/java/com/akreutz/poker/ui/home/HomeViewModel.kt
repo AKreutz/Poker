@@ -1,7 +1,6 @@
 package com.akreutz.poker.ui.home
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akreutz.poker.data.model.PlayerTotals
 import com.akreutz.poker.data.model.PokerRecords
@@ -27,11 +26,4 @@ class HomeViewModel(repository: PokerRepository) : ViewModel() {
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = null,
         )
-
-    class Factory(private val repository: PokerRepository) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return HomeViewModel(repository) as T
-        }
-    }
 }

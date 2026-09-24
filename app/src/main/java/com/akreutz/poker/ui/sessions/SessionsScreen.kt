@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.akreutz.poker.ui.SimpleViewModelFactory
 import com.akreutz.poker.PokerApplication
 import com.akreutz.poker.ui.common.SessionCard
 
@@ -22,7 +23,7 @@ import com.akreutz.poker.ui.common.SessionCard
 fun SessionsScreen(modifier: Modifier = Modifier) {
     val application = LocalContext.current.applicationContext as PokerApplication
     val viewModel: SessionsViewModel = viewModel(
-        factory = SessionsViewModel.Factory(application.repository),
+        factory = SimpleViewModelFactory { SessionsViewModel(application.repository) },
     )
     val sessions by viewModel.sessions.collectAsState()
     val sessionResultsById by viewModel.sessionResultsById.collectAsState()

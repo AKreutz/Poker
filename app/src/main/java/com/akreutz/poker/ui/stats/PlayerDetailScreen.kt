@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.akreutz.poker.ui.SimpleViewModelFactory
 import com.akreutz.poker.PokerApplication
 import com.akreutz.poker.data.model.PlayerStreak
 import com.akreutz.poker.data.model.PlayerTotals
@@ -63,7 +64,7 @@ private fun PlayerStreak.formatDateRange(): String =
 fun PlayerDetailScreen(playerId: String, modifier: Modifier = Modifier) {
     val application = LocalContext.current.applicationContext as PokerApplication
     val viewModel: PlayerDetailViewModel = viewModel(
-        factory = PlayerDetailViewModel.Factory(application.repository, playerId),
+        factory = SimpleViewModelFactory { PlayerDetailViewModel(application.repository, playerId) },
     )
     val uiState by viewModel.uiState.collectAsState()
     val player = uiState.player

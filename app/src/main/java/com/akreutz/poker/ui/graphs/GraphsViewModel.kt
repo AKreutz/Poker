@@ -1,7 +1,6 @@
 package com.akreutz.poker.ui.graphs
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akreutz.poker.data.model.PlayerWithSessionCount
 import com.akreutz.poker.data.model.chronologicalDeltasByPlayerId
@@ -98,11 +97,4 @@ class GraphsViewModel(repository: PokerRepository) : ViewModel() {
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = GraphsUiState(sessionDates = emptyList(), balanceSeriesByPlayerId = emptyMap()),
     )
-
-    class Factory(private val repository: PokerRepository) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return GraphsViewModel(repository) as T
-        }
-    }
 }

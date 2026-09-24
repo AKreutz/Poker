@@ -1,7 +1,6 @@
 package com.akreutz.poker.ui.stats
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akreutz.poker.data.local.entity.PlayerEntity
 import com.akreutz.poker.data.local.entity.SessionStatus
@@ -92,14 +91,4 @@ class PlayerDetailViewModel(
             standardDeviationCents = null,
         ),
     )
-
-    class Factory(
-        private val repository: PokerRepository,
-        private val playerId: String,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return PlayerDetailViewModel(repository, playerId) as T
-        }
-    }
 }
