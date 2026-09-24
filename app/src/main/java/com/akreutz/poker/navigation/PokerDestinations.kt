@@ -22,6 +22,7 @@ enum class PokerDestination(
 
 object PokerRoutes {
     const val PLAYER_DETAIL = "player/{playerId}"
+    const val SESSIONS_DEBUG = "sessions_debug"
 
     fun playerDetail(playerId: String) = "player/$playerId"
 }

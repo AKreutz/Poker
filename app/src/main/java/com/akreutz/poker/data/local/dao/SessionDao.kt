@@ -35,6 +35,10 @@ interface SessionDao {
     @Query("SELECT * FROM sessions WHERE isDeleted = 0 ORDER BY date DESC")
     fun observeActiveSessions(): Flow<List<SessionEntity>>
 
+    /** All sessions regardless of status or soft-delete state, for debugging. */
+    @Query("SELECT * FROM sessions ORDER BY date DESC")
+    fun observeAllSessions(): Flow<List<SessionEntity>>
+
     @Transaction
     @Query("SELECT * FROM sessions WHERE isDeleted = 0 AND status = 'CONCLUDED' ORDER BY date DESC")
     fun observeSessionsWithEntries(): Flow<List<SessionWithEntries>>
@@ -54,4 +58,11 @@ interface SessionDao {
 
     @Query("UPDATE sessions SET handsPlayed = :handsPlayed, updatedAt = :updatedAt WHERE id = :id")
     suspend fun updateHandsPlayed(id: String, handsPlayed: Int?, updatedAt: Instant)
+
+    @Query("SELECT * FROM sessions WHERE isDeleted = 1")
+    suspend fun getSoftDeleted(): List<SessionEntity>
+
+    /** Hard-deletes soft-deleted sessions; cascades to their entries via the FK. */
+    @Query("DELETE FROM sessions WHERE isDeleted = 1")
+    suspend fun deleteSoftDeleted()
 }

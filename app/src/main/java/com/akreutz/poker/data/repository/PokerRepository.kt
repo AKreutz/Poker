@@ -1,9 +1,11 @@
 package com.akreutz.poker.data.repository
 
 import com.akreutz.poker.data.local.dao.PlayerDao
+import com.akreutz.poker.data.local.dao.PurgedIdDao
 import com.akreutz.poker.data.local.dao.SessionDao
 import com.akreutz.poker.data.local.dao.SessionEntryDao
 import com.akreutz.poker.data.local.entity.PlayerEntity
+import com.akreutz.poker.data.local.entity.PurgedIdEntity
 import com.akreutz.poker.data.local.entity.SessionEntity
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
 import com.akreutz.poker.data.local.entity.SessionStatus
@@ -20,6 +22,7 @@ class PokerRepository(
     private val playerDao: PlayerDao,
     private val sessionDao: SessionDao,
     private val sessionEntryDao: SessionEntryDao,
+    private val purgedIdDao: PurgedIdDao,
     private val localChangeTracker: LocalChangeTracker,
 ) {
     fun observeActivePlayers(): Flow<List<PlayerEntity>> = playerDao.observeActivePlayersBySessionsPlayed()
@@ -31,6 +34,10 @@ class PokerRepository(
 
     fun observeSessionsWithEntries(): Flow<List<SessionWithEntries>> =
         sessionDao.observeSessionsWithEntries()
+
+    /** All sessions regardless of status or soft-delete state, for debugging. */
+    fun observeAllSessions(): Flow<List<SessionEntity>> =
+        sessionDao.observeAllSessions()
 
     suspend fun getSessionsWithEntries(): List<SessionWithEntries> =
         sessionDao.observeSessionsWithEntries().first()
@@ -75,6 +82,28 @@ class PokerRepository(
 
     suspend fun deleteSession(session: SessionEntity) {
         sessionDao.update(session.copy(isDeleted = true, updatedAt = Instant.now()))
+        localChangeTracker.markDirty()
+    }
+
+    /**
+     * Permanently removes every soft-deleted session (and, via the FK cascade, its entries)
+     * from the local database. Every removed id - sessions and their entries alike - is
+     * recorded in the purge log first, so the hard-delete survives sync instead of the rows
+     * reappearing from a remote snapshot or another device that still has them soft-deleted.
+     * See [com.akreutz.poker.data.sync.SyncManager] for how the purge log is used during merge.
+     */
+    suspend fun pruneDeletedSessions() {
+        val sessionsToPurge = sessionDao.getSoftDeleted()
+        if (sessionsToPurge.isEmpty()) return
+
+        val sessionIds = sessionsToPurge.map { it.id }
+        val entriesToPurge = sessionEntryDao.getForSessions(sessionIds)
+
+        val now = Instant.now()
+        val purgedIds = (sessionIds + entriesToPurge.map { it.id }).map { PurgedIdEntity(id = it, purgedAt = now) }
+        purgedIdDao.insertAll(purgedIds)
+
+        sessionDao.deleteSoftDeleted()
         localChangeTracker.markDirty()
     }
 

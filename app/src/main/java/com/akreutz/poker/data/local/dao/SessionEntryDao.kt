@@ -28,6 +28,9 @@ interface SessionEntryDao {
     @Query("SELECT * FROM session_entries")
     suspend fun getAll(): List<SessionEntryEntity>
 
+    @Query("SELECT * FROM session_entries WHERE sessionId IN (:sessionIds)")
+    suspend fun getForSessions(sessionIds: List<String>): List<SessionEntryEntity>
+
     @Query("SELECT * FROM session_entries WHERE sessionId = :sessionId AND isDeleted = 0")
     fun observeEntriesForSession(sessionId: String): Flow<List<SessionEntryEntity>>
 

@@ -2,9 +2,11 @@ package com.akreutz.poker.data.sync
 
 import android.util.Log
 import com.akreutz.poker.data.local.dao.PlayerDao
+import com.akreutz.poker.data.local.dao.PurgedIdDao
 import com.akreutz.poker.data.local.dao.SessionDao
 import com.akreutz.poker.data.local.dao.SessionEntryDao
 import com.akreutz.poker.data.local.entity.PlayerEntity
+import com.akreutz.poker.data.local.entity.PurgedIdEntity
 import com.akreutz.poker.data.local.entity.SessionEntity
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
 import java.time.Instant
@@ -15,8 +17,16 @@ private const val TAG = "PokerSync"
  * Keeps the local Room database and the remote [RemoteDataSource] in agreement.
  *
  * Merge strategy is last-write-wins per row, keyed by [PlayerEntity.id] / [SessionEntity.id] /
- * [SessionEntryEntity.id], using each row's `updatedAt`. Deletes are soft (`isDeleted = true`),
- * so a delete is just a normal row update and merges the same way as any other edit.
+ * [SessionEntryEntity.id], using each row's `updatedAt`. Deletes are normally soft
+ * (`isDeleted = true`), so a delete is just a normal row update and merges the same way as any
+ * other edit.
+ *
+ * [PurgedIdEntity] rows are the one exception: they're tombstones for rows that were
+ * permanently (hard-)deleted. That table is merged as a plain union (it only ever grows - a
+ * purge is never undone), and any player/session/entry whose id appears in the merged purge log
+ * is dropped from the merged result, regardless of which side it came from. Without this, a
+ * hard-delete wouldn't stick: a row simply missing from one side is otherwise indistinguishable
+ * from "hasn't synced yet" and would come back on the next merge.
  *
  * This is the only place that needs to change if the merge policy ever gets smarter (e.g.
  * field-level merges); everything else only sees Room or [RemoteDataSource].
@@ -25,6 +35,7 @@ class SyncManager(
     private val playerDao: PlayerDao,
     private val sessionDao: SessionDao,
     private val sessionEntryDao: SessionEntryDao,
+    private val purgedIdDao: PurgedIdDao,
     private val remoteDataSource: RemoteDataSource,
 ) {
     private var lastKnownRemoteVersion: String? = null
@@ -80,6 +91,7 @@ class SyncManager(
         players = playerDao.getAll(),
         sessions = sessionDao.getAll(),
         entries = sessionEntryDao.getAll(),
+        purgedIds = purgedIdDao.getAll(),
     )
 
     private suspend fun applyToLocal(merged: PokerSnapshot, currentLocal: PokerSnapshot) {
@@ -87,13 +99,22 @@ class SyncManager(
         playerDao.upsertAll(merged.players)
         sessionDao.upsertAll(merged.sessions)
         sessionEntryDao.upsertAll(merged.entries)
+        purgedIdDao.upsertAll(merged.purgedIds)
     }
 
-    private fun mergeSnapshots(local: PokerSnapshot, remote: PokerSnapshot): PokerSnapshot = PokerSnapshot(
-        players = mergeById(local.players, remote.players, PlayerEntity::id, PlayerEntity::updatedAt),
-        sessions = mergeById(local.sessions, remote.sessions, SessionEntity::id, SessionEntity::updatedAt),
-        entries = mergeById(local.entries, remote.entries, SessionEntryEntity::id, SessionEntryEntity::updatedAt),
-    )
+    private fun mergeSnapshots(local: PokerSnapshot, remote: PokerSnapshot): PokerSnapshot {
+        val purgedIds = mergeById(local.purgedIds, remote.purgedIds, PurgedIdEntity::id, PurgedIdEntity::purgedAt)
+        val purgedIdSet = purgedIds.mapTo(mutableSetOf()) { it.id }
+        return PokerSnapshot(
+            players = mergeById(local.players, remote.players, PlayerEntity::id, PlayerEntity::updatedAt)
+                .filterNot { it.id in purgedIdSet },
+            sessions = mergeById(local.sessions, remote.sessions, SessionEntity::id, SessionEntity::updatedAt)
+                .filterNot { it.id in purgedIdSet },
+            entries = mergeById(local.entries, remote.entries, SessionEntryEntity::id, SessionEntryEntity::updatedAt)
+                .filterNot { it.id in purgedIdSet },
+            purgedIds = purgedIds,
+        )
+    }
 
     private fun <T, K> mergeById(
         local: List<T>,

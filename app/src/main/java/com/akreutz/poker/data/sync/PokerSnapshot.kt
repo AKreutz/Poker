@@ -1,6 +1,7 @@
 package com.akreutz.poker.data.sync
 
 import com.akreutz.poker.data.local.entity.PlayerEntity
+import com.akreutz.poker.data.local.entity.PurgedIdEntity
 import com.akreutz.poker.data.local.entity.SessionEntity
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
 
@@ -13,4 +14,5 @@ data class PokerSnapshot(
     val players: List<PlayerEntity>,
     val sessions: List<SessionEntity>,
     val entries: List<SessionEntryEntity>,
+    val purgedIds: List<PurgedIdEntity> = emptyList(),
 )

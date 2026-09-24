@@ -1,5 +1,7 @@
 package com.akreutz.poker.ui
 
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -51,6 +53,7 @@ import com.akreutz.poker.ui.graphs.FullScreenGraphOverlay
 import com.akreutz.poker.ui.graphs.GraphsFullScreenState
 import com.akreutz.poker.ui.graphs.GraphsScreen
 import com.akreutz.poker.ui.home.OverviewScreen
+import com.akreutz.poker.ui.sessions.SessionsDebugScreen
 import com.akreutz.poker.ui.sessions.SessionsScreen
 import com.akreutz.poker.ui.stats.PlayerDetailScreen
 import com.akreutz.poker.ui.stats.StatsScreen
@@ -62,10 +65,11 @@ fun PokerApp() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val isPlayerDetail = currentDestination?.route == PokerRoutes.PLAYER_DETAIL
-    val currentTab = if (isPlayerDetail) {
-        PokerDestination.Stats
-    } else {
-        PokerDestination.entries.firstOrNull { destination ->
+    val isSessionsDebug = currentDestination?.route == PokerRoutes.SESSIONS_DEBUG
+    val currentTab = when {
+        isPlayerDetail -> PokerDestination.Stats
+        isSessionsDebug -> PokerDestination.Sessions
+        else -> PokerDestination.entries.firstOrNull { destination ->
             currentDestination?.hierarchy?.any { it.route == destination.route } == true
         } ?: PokerDestination.Overview
     }
@@ -101,8 +105,25 @@ fun PokerApp() {
                 }
             },
             topBar = {
+                val isSessionsTab = currentTab == PokerDestination.Sessions && !isPlayerDetail
                 TopAppBar(
-                    title = { Text(if (isPlayerDetail) "Player Stats" else currentTab.label) },
+                    title = {
+                        if (isSessionsTab) {
+                            Text(
+                                text = currentTab.label,
+                                modifier = Modifier.combinedClickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = {},
+                                    onLongClick = {
+                                        navController.navigate(PokerRoutes.SESSIONS_DEBUG)
+                                    },
+                                ),
+                            )
+                        } else {
+                            Text(if (isPlayerDetail) "Player Stats" else currentTab.label)
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         titleContentColor = MaterialTheme.colorScheme.onPrimary,
@@ -143,6 +164,9 @@ fun PokerApp() {
                         NavigationBarItem(
                             selected = destination == currentTab,
                             onClick = {
+                                if (isSessionsDebug) {
+                                    navController.popBackStack(PokerRoutes.SESSIONS_DEBUG, inclusive = true)
+                                }
                                 navController.navigate(destination.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
@@ -182,6 +206,7 @@ fun PokerApp() {
                     GraphsScreen(onStateChanged = { graphsState = it })
                 }
                 composable(PokerDestination.Sessions.route) { SessionsScreen() }
+                composable(PokerRoutes.SESSIONS_DEBUG) { SessionsDebugScreen() }
                 composable(
                     route = PokerRoutes.PLAYER_DETAIL,
                     arguments = listOf(navArgument("playerId") { type = NavType.StringType }),

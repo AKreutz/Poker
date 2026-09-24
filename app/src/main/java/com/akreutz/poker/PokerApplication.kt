@@ -34,7 +34,13 @@ class PokerApplication : Application() {
     val localChangeTracker = LocalChangeTracker()
 
     val repository by lazy {
-        PokerRepository(database.playerDao(), database.sessionDao(), database.sessionEntryDao(), localChangeTracker)
+        PokerRepository(
+            database.playerDao(),
+            database.sessionDao(),
+            database.sessionEntryDao(),
+            database.purgedIdDao(),
+            localChangeTracker,
+        )
     }
 
     val authManager by lazy { GoogleAuthManager(this) }
@@ -45,6 +51,7 @@ class PokerApplication : Application() {
             database.playerDao(),
             database.sessionDao(),
             database.sessionEntryDao(),
+            database.purgedIdDao(),
             GoogleDriveDataSource(authManager),
         )
     }

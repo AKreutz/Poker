@@ -1,6 +1,7 @@
 package com.akreutz.poker.data.sync.drive
 
 import com.akreutz.poker.data.local.entity.PlayerEntity
+import com.akreutz.poker.data.local.entity.PurgedIdEntity
 import com.akreutz.poker.data.local.entity.SessionEntity
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
 import com.akreutz.poker.data.local.entity.SessionStatus
@@ -17,6 +18,7 @@ data class DriveSnapshotDto(
     val players: List<PlayerDto>,
     val sessions: List<SessionDto>,
     val entries: List<SessionEntryDto>,
+    val purgedIds: List<PurgedIdDto> = emptyList(),
 ) {
     @Serializable
     data class PlayerDto(
@@ -50,6 +52,12 @@ data class DriveSnapshotDto(
         val isDeleted: Boolean,
     )
 
+    @Serializable
+    data class PurgedIdDto(
+        val id: String,
+        val purgedAt: String,
+    )
+
     companion object {
         fun fromSnapshot(snapshot: PokerSnapshot): DriveSnapshotDto = DriveSnapshotDto(
             players = snapshot.players.map {
@@ -66,6 +74,9 @@ data class DriveSnapshotDto(
                     it.id, it.sessionId, it.playerId, it.buyInCents, it.cashOutCents,
                     it.createdAt.toString(), it.updatedAt.toString(), it.isDeleted,
                 )
+            },
+            purgedIds = snapshot.purgedIds.map {
+                PurgedIdDto(it.id, it.purgedAt.toString())
             },
         )
     }
@@ -102,6 +113,9 @@ data class DriveSnapshotDto(
                 updatedAt = java.time.Instant.parse(it.updatedAt),
                 isDeleted = it.isDeleted,
             )
+        },
+        purgedIds = purgedIds.map {
+            PurgedIdEntity(id = it.id, purgedAt = java.time.Instant.parse(it.purgedAt))
         },
     )
 }
