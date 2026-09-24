@@ -34,6 +34,12 @@ data class SessionEntryEntity(
     val createdAt: Instant,
     val updatedAt: Instant,
     val isDeleted: Boolean = false,
+    /**
+     * Number of hands this player won during the session. Tracked live for sessions started
+     * with this feature; null for older entries, or when recording was declined, where this
+     * wasn't saved.
+     */
+    val handsWon: Int? = null,
 ) {
     val deltaCents: Long get() = cashOutCents - buyInCents
 }

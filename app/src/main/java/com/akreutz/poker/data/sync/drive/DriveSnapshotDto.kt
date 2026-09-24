@@ -37,7 +37,6 @@ data class DriveSnapshotDto(
         val createdAt: String,
         val updatedAt: String,
         val isDeleted: Boolean,
-        val handsPlayed: Int? = null,
     )
 
     @Serializable
@@ -50,6 +49,7 @@ data class DriveSnapshotDto(
         val createdAt: String,
         val updatedAt: String,
         val isDeleted: Boolean,
+        val handsWon: Int? = null,
     )
 
     @Serializable
@@ -66,13 +66,13 @@ data class DriveSnapshotDto(
             sessions = snapshot.sessions.map {
                 SessionDto(
                     it.id, it.date.toString(), it.status.name, it.createdAt.toString(), it.updatedAt.toString(),
-                    it.isDeleted, it.handsPlayed,
+                    it.isDeleted,
                 )
             },
             entries = snapshot.entries.map {
                 SessionEntryDto(
                     it.id, it.sessionId, it.playerId, it.buyInCents, it.cashOutCents,
-                    it.createdAt.toString(), it.updatedAt.toString(), it.isDeleted,
+                    it.createdAt.toString(), it.updatedAt.toString(), it.isDeleted, it.handsWon,
                 )
             },
             purgedIds = snapshot.purgedIds.map {
@@ -99,7 +99,6 @@ data class DriveSnapshotDto(
                 createdAt = java.time.Instant.parse(it.createdAt),
                 updatedAt = java.time.Instant.parse(it.updatedAt),
                 isDeleted = it.isDeleted,
-                handsPlayed = it.handsPlayed,
             )
         },
         entries = entries.map {
@@ -112,6 +111,7 @@ data class DriveSnapshotDto(
                 createdAt = java.time.Instant.parse(it.createdAt),
                 updatedAt = java.time.Instant.parse(it.updatedAt),
                 isDeleted = it.isDeleted,
+                handsWon = it.handsWon,
             )
         },
         purgedIds = purgedIds.map {

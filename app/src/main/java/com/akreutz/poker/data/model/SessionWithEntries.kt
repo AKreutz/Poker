@@ -20,4 +20,8 @@ data class SessionWithEntries(
         entity = SessionEntryEntity::class,
     )
     val entries: List<SessionEntryWithPlayer>,
-)
+) {
+    /** Total hands played this session, i.e. the sum of hands won across players; null if untracked. */
+    val handsPlayed: Int?
+        get() = entries.mapNotNull { it.entry.handsWon }.takeIf { it.isNotEmpty() }?.sum()
+}

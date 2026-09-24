@@ -14,9 +14,4 @@ data class SessionEntity(
     val createdAt: Instant,
     val updatedAt: Instant,
     val isDeleted: Boolean = false,
-    /**
-     * Number of hands played during this session. Tracked live for sessions started with this
-     * feature; null for older sessions where this wasn't recorded.
-     */
-    val handsPlayed: Int? = null,
 )

@@ -16,3 +16,5 @@ fun parseCentsInput(raw: String): Long? {
 }
 
 fun formatSessions(count: Int): String = "$count session${if (count == 1) "" else "s"}"
+
+fun formatHands(count: Int): String = "$count hand${if (count == 1) "" else "s"}"

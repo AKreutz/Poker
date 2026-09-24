@@ -65,8 +65,13 @@ class PokerRepository(
         return session
     }
 
-    suspend fun updateHandsPlayed(sessionId: String, handsPlayed: Int?) {
-        sessionDao.updateHandsPlayed(sessionId, handsPlayed, Instant.now())
+    suspend fun updateHandsWon(entryId: String, handsWon: Int?) {
+        sessionEntryDao.updateHandsWon(entryId, handsWon, Instant.now())
+        localChangeTracker.markDirty()
+    }
+
+    suspend fun clearHandsWonForSession(sessionId: String) {
+        sessionEntryDao.clearHandsWonForSession(sessionId, Instant.now())
         localChangeTracker.markDirty()
     }
 

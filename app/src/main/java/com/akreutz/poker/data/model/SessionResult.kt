@@ -5,6 +5,7 @@ import java.time.LocalDate
 data class PlayerSessionOutcome(
     val playerName: String,
     val deltaCents: Long,
+    val handsWon: Int? = null,
 )
 
 sealed class StreakUpdate {
@@ -61,9 +62,16 @@ fun computeSessionResult(
     recordsBefore: PokerRecords?,
     recordsAfter: PokerRecords,
 ): SessionResult {
+    val handsPlayed = sessionWithEntries.handsPlayed
     val outcomes = sessionWithEntries.entries
         .sortedByDescending { it.entry.deltaCents }
-        .map { PlayerSessionOutcome(it.player.name, it.entry.deltaCents) }
+        .map {
+            PlayerSessionOutcome(
+                playerName = it.player.name,
+                deltaCents = it.entry.deltaCents,
+                handsWon = it.entry.handsWon.takeIf { handsPlayed != null },
+            )
+        }
 
     val sessionDate = sessionWithEntries.session.date
     val playedNames = outcomes.map { it.playerName }.toSet()
@@ -128,5 +136,5 @@ fun computeSessionResult(
         }
     }
 
-    return SessionResult(sessionDate, outcomes, streakUpdates, newRecords, sessionWithEntries.session.handsPlayed)
+    return SessionResult(sessionDate, outcomes, streakUpdates, newRecords, handsPlayed)
 }

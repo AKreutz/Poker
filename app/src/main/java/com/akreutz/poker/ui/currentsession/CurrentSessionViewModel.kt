@@ -74,25 +74,27 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
         }
     }
 
-    fun adjustHandsPlayed(delta: Int) {
-        val session = openSession.value?.session ?: return
-        val previousCount = session.handsPlayed ?: 0
+    fun adjustHandsWon(entry: SessionEntryEntity, delta: Int) {
+        val sessionWithEntries = openSession.value ?: return
+        val previousTotal = sessionWithEntries.handsPlayed ?: 0
+        val previousCount = entry.handsWon ?: 0
         val newCount = previousCount + delta
         if (newCount < 0) return
-        if (previousCount == 0 && newCount > 0) {
+        val newTotal = previousTotal + delta
+        if (previousTotal == 0 && newTotal > 0) {
             // First hand recorded this session: auto-opt-in.
             _recordHandsPlayed.value = true
-        } else if (newCount == 0) {
+        } else if (newTotal == 0) {
             // Back to zero: nothing to record, so opting in is meaningless.
             _recordHandsPlayed.value = false
         }
         viewModelScope.launch {
-            repository.updateHandsPlayed(session.id, newCount)
+            repository.updateHandsWon(entry.id, newCount)
         }
     }
 
     fun setRecordHandsPlayed(record: Boolean) {
-        val handsPlayed = openSession.value?.session?.handsPlayed ?: 0
+        val handsPlayed = openSession.value?.handsPlayed ?: 0
         if (record && handsPlayed <= 0) return
         _recordHandsPlayed.value = record
     }
@@ -119,20 +121,19 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
             }
             repository.concludeSession(sessionWithEntries.session)
             if (!shouldRecordHandsPlayed) {
-                repository.updateHandsPlayed(sessionWithEntries.session.id, null)
+                repository.clearHandsWonForSession(sessionWithEntries.session.id)
             }
             _showConcludeDialog.value = false
             _recordHandsPlayed.value = false
 
             val updatedEntries = sessionWithEntries.entries.map { entryWithPlayer ->
                 val cashOutCents = cashOutsByEntryId[entryWithPlayer.entry.id] ?: entryWithPlayer.entry.cashOutCents
-                entryWithPlayer.copy(entry = entryWithPlayer.entry.copy(cashOutCents = cashOutCents))
+                val handsWon = entryWithPlayer.entry.handsWon.takeIf { shouldRecordHandsPlayed }
+                entryWithPlayer.copy(
+                    entry = entryWithPlayer.entry.copy(cashOutCents = cashOutCents, handsWon = handsWon),
+                )
             }
-            val recordedHandsPlayed = sessionWithEntries.session.handsPlayed.takeIf { shouldRecordHandsPlayed }
-            val concludedSession = sessionWithEntries.copy(
-                session = sessionWithEntries.session.copy(handsPlayed = recordedHandsPlayed),
-                entries = updatedEntries,
-            )
+            val concludedSession = sessionWithEntries.copy(entries = updatedEntries)
 
             val sessionsAfter = repository.getSessionsWithEntries()
             val recordsAfter = computePokerRecords(sessionsAfter)

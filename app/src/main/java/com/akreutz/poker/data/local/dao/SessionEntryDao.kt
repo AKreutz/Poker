@@ -7,6 +7,7 @@ import androidx.room.Update
 import androidx.room.Upsert
 import com.akreutz.poker.data.local.entity.SessionEntryEntity
 import com.akreutz.poker.data.model.PlayerTotals
+import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -36,6 +37,12 @@ interface SessionEntryDao {
 
     @Query("SELECT * FROM session_entries WHERE playerId = :playerId AND isDeleted = 0")
     fun observeEntriesForPlayer(playerId: String): Flow<List<SessionEntryEntity>>
+
+    @Query("UPDATE session_entries SET handsWon = :handsWon, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateHandsWon(id: String, handsWon: Int?, updatedAt: Instant)
+
+    @Query("UPDATE session_entries SET handsWon = NULL, updatedAt = :updatedAt WHERE sessionId = :sessionId")
+    suspend fun clearHandsWonForSession(sessionId: String, updatedAt: Instant)
 
     @Query(
         """

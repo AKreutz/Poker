@@ -10,12 +10,13 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -75,6 +76,7 @@ import com.akreutz.poker.data.model.SessionResult
 import com.akreutz.poker.data.model.SessionWithEntries
 import com.akreutz.poker.ui.common.SessionHighlights
 import com.akreutz.poker.ui.common.formatCents
+import com.akreutz.poker.ui.common.formatHands
 import com.akreutz.poker.ui.common.parseCentsInput
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -173,16 +175,27 @@ fun CurrentSessionScreen(modifier: Modifier = Modifier) {
 
     var showCancelConfirmation by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         PlayerBuyInList(
             sessionWithEntries = session,
             onIncreaseBuyIn = { entry, additionalCents -> viewModel.increaseBuyIn(entry, additionalCents) },
         )
-        HandsPlayedCard(
-            handsPlayed = session.session.handsPlayed ?: 0,
+        Text(
+            text = "Hands won per player",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        HandsWonCard(
+            sessionWithEntries = session,
             recordHandsPlayed = recordHandsPlayed,
-            onIncrement = { viewModel.adjustHandsPlayed(1) },
-            onDecrement = { viewModel.adjustHandsPlayed(-1) },
+            onIncrement = { entry -> viewModel.adjustHandsWon(entry, 1) },
+            onDecrement = { entry -> viewModel.adjustHandsWon(entry, -1) },
             onRecordChanged = { viewModel.setRecordHandsPlayed(it) },
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -292,13 +305,15 @@ private fun PlayerBuyInList(
 }
 
 @Composable
-private fun HandsPlayedCard(
-    handsPlayed: Int,
+private fun HandsWonCard(
+    sessionWithEntries: SessionWithEntries,
     recordHandsPlayed: Boolean,
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit,
+    onIncrement: (SessionEntryEntity) -> Unit,
+    onDecrement: (SessionEntryEntity) -> Unit,
     onRecordChanged: (Boolean) -> Unit,
 ) {
+    val handsPlayed = sessionWithEntries.handsPlayed ?: 0
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -321,39 +336,16 @@ private fun HandsPlayedCard(
                 )
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(96.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedButton(
-                    onClick = onDecrement,
-                    enabled = handsPlayed > 0,
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
-                    colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface),
-                    modifier = Modifier
-                        .weight(0.62f)
-                        .fillMaxHeight(),
-                ) {
-                    Text(
-                        text = "−1",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                Button(
-                    onClick = onIncrement,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                ) {
-                    Text(
-                        text = "+1",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                sessionWithEntries.entries.forEachIndexed { index, entryWithPlayer ->
+                    if (index > 0) {
+                        HorizontalDivider()
+                    }
+                    HandsWonRow(
+                        playerName = entryWithPlayer.player.name,
+                        handsWon = entryWithPlayer.entry.handsWon ?: 0,
+                        onIncrement = { onIncrement(entryWithPlayer.entry) },
+                        onDecrement = { onDecrement(entryWithPlayer.entry) },
                     )
                 }
             }
@@ -366,7 +358,7 @@ private fun HandsPlayedCard(
             ) {
                 Column {
                     Text(
-                        text = "Record hands played",
+                        text = "Record hands won",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
@@ -384,6 +376,54 @@ private fun HandsPlayedCard(
                     onCheckedChange = onRecordChanged,
                     enabled = handsPlayed > 0,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HandsWonRow(
+    playerName: String,
+    handsWon: Int,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = playerName,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = onDecrement,
+                enabled = handsWon > 0,
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier.size(width = 44.dp, height = 40.dp),
+            ) {
+                Text(text = "−", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            }
+            Text(
+                text = "$handsWon",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(28.dp),
+            )
+            Button(
+                onClick = onIncrement,
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier.size(width = 44.dp, height = 40.dp),
+            ) {
+                Text(text = "+", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -572,7 +612,7 @@ private fun SessionResultDialog(
                     Spacer(modifier = Modifier.size(2.dp))
                     val subtitle = buildString {
                         append("${result.outcomes.size} players · ${result.sessionDate.format(RESULT_DATE_FORMATTER)}")
-                        result.handsPlayed?.let { append(" · $it hands") }
+                        result.handsPlayed?.let { append(" · ${formatHands(it)}") }
                     }
                     Text(
                         text = subtitle,
@@ -618,6 +658,14 @@ private fun SessionResultDialog(
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.SemiBold,
                                 )
+                                outcome.handsWon?.let { handsWon ->
+                                    Spacer(modifier = Modifier.size(6.dp))
+                                    Text(
+                                        text = "${formatHands(handsWon)} won",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                             Text(
                                 text = formatCents(outcome.deltaCents),

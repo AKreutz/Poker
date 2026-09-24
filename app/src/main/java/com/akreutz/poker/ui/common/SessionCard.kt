@@ -78,9 +78,9 @@ fun SessionCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
-                    sessionWithEntries.session.handsPlayed?.let { handsPlayed ->
+                    sessionWithEntries.handsPlayed?.let { handsPlayed ->
                         Text(
-                            text = "$handsPlayed hands",
+                            text = formatHands(handsPlayed),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -193,11 +193,21 @@ private fun SessionEntriesList(sessionWithEntries: SessionWithEntries) {
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
-                    Text(
-                        text = entryWithPlayer.player.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = entryWithPlayer.player.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        entry.handsWon?.let { handsWon ->
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${formatHands(handsWon)} won",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                     Text(
                         text = "${formatCents(entry.buyInCents)} → ${formatCents(entry.cashOutCents)}",
                         style = MaterialTheme.typography.bodySmall,

@@ -69,8 +69,7 @@ fun SessionsDebugScreen(modifier: Modifier = Modifier) {
             items(sessions, key = { it.id }) { session ->
                 val deletedSuffix = if (session.isDeleted) " (deleted)" else ""
                 Text(
-                    text = "${session.date} · ${session.status} · hands=${session.handsPlayed ?: "-"}" +
-                        " · id=${session.id}$deletedSuffix",
+                    text = "${session.date} · ${session.status} · id=${session.id}$deletedSuffix",
                     modifier = Modifier.padding(vertical = 4.dp),
                 )
             }
