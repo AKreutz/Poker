@@ -9,6 +9,7 @@ import androidx.room.Upsert
 import com.akreutz.poker.data.local.entity.SessionEntity
 import com.akreutz.poker.data.local.entity.SessionStatus
 import com.akreutz.poker.data.model.SessionWithEntries
+import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 
@@ -50,4 +51,7 @@ interface SessionDao {
 
     @Query("SELECT * FROM sessions WHERE date = :date AND isDeleted = 0 LIMIT 1")
     suspend fun findByDate(date: LocalDate): SessionEntity?
+
+    @Query("UPDATE sessions SET handsPlayed = :handsPlayed, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateHandsPlayed(id: String, handsPlayed: Int?, updatedAt: Instant)
 }

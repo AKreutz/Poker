@@ -1,5 +1,6 @@
 package com.akreutz.poker.ui.currentsession
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -9,8 +10,10 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -25,6 +28,9 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -34,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -84,6 +91,7 @@ fun CurrentSessionScreen(modifier: Modifier = Modifier) {
     val showConcludeDialog by viewModel.showConcludeDialog.collectAsState()
     val players by viewModel.players.collectAsState()
     val sessionResult by viewModel.sessionResult.collectAsState()
+    val recordHandsPlayed by viewModel.recordHandsPlayed.collectAsState()
 
     if (showPlayerSelection) {
         PlayerSelectionDialog(
@@ -169,6 +177,13 @@ fun CurrentSessionScreen(modifier: Modifier = Modifier) {
         PlayerBuyInList(
             sessionWithEntries = session,
             onIncreaseBuyIn = { entry, additionalCents -> viewModel.increaseBuyIn(entry, additionalCents) },
+        )
+        HandsPlayedCard(
+            handsPlayed = session.session.handsPlayed ?: 0,
+            recordHandsPlayed = recordHandsPlayed,
+            onIncrement = { viewModel.adjustHandsPlayed(1) },
+            onDecrement = { viewModel.adjustHandsPlayed(-1) },
+            onRecordChanged = { viewModel.setRecordHandsPlayed(it) },
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(
@@ -273,6 +288,104 @@ private fun PlayerBuyInList(
             },
             onDismiss = { entryForBuyInDialog = null },
         )
+    }
+}
+
+@Composable
+private fun HandsPlayedCard(
+    handsPlayed: Int,
+    recordHandsPlayed: Boolean,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit,
+    onRecordChanged: (Boolean) -> Unit,
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "HANDS PLAYED",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "$handsPlayed",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(96.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onDecrement,
+                    enabled = handsPlayed > 0,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier
+                        .weight(0.62f)
+                        .fillMaxHeight(),
+                ) {
+                    Text(
+                        text = "−1",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Button(
+                    onClick = onIncrement,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                ) {
+                    Text(
+                        text = "+1",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
+            HorizontalDivider()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column {
+                    Text(
+                        text = "Record hands played",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = if (handsPlayed > 0) {
+                            "Saved with this session"
+                        } else {
+                            "Track at least one hand to enable"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = recordHandsPlayed,
+                    onCheckedChange = onRecordChanged,
+                    enabled = handsPlayed > 0,
+                )
+            }
+        }
     }
 }
 
@@ -457,8 +570,12 @@ private fun SessionResultDialog(
                         fontWeight = FontWeight.Bold,
                     )
                     Spacer(modifier = Modifier.size(2.dp))
+                    val subtitle = buildString {
+                        append("${result.outcomes.size} players · ${result.sessionDate.format(RESULT_DATE_FORMATTER)}")
+                        result.handsPlayed?.let { append(" · $it hands") }
+                    }
                     Text(
-                        text = "${result.outcomes.size} players · ${result.sessionDate.format(RESULT_DATE_FORMATTER)}",
+                        text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

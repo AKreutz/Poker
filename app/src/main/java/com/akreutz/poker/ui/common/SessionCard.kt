@@ -72,11 +72,20 @@ fun SessionCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = sessionWithEntries.session.date.format(SESSION_DATE_FORMATTER),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
+                Column {
+                    Text(
+                        text = sessionWithEntries.session.date.format(SESSION_DATE_FORMATTER),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    sessionWithEntries.session.handsPlayed?.let { handsPlayed ->
+                        Text(
+                            text = "$handsPlayed hands",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (onDelete != null) {
                         IconButton(onClick = { showDeleteConfirmation = true }) {

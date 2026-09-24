@@ -58,6 +58,11 @@ class PokerRepository(
         return session
     }
 
+    suspend fun updateHandsPlayed(sessionId: String, handsPlayed: Int?) {
+        sessionDao.updateHandsPlayed(sessionId, handsPlayed, Instant.now())
+        localChangeTracker.markDirty()
+    }
+
     suspend fun concludeSession(session: SessionEntity) {
         sessionDao.update(session.copy(status = SessionStatus.CONCLUDED, updatedAt = Instant.now()))
         localChangeTracker.markDirty()

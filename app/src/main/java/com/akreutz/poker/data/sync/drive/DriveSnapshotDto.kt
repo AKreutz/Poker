@@ -35,6 +35,7 @@ data class DriveSnapshotDto(
         val createdAt: String,
         val updatedAt: String,
         val isDeleted: Boolean,
+        val handsPlayed: Int? = null,
     )
 
     @Serializable
@@ -55,7 +56,10 @@ data class DriveSnapshotDto(
                 PlayerDto(it.id, it.name, it.createdAt.toString(), it.updatedAt.toString(), it.isDeleted)
             },
             sessions = snapshot.sessions.map {
-                SessionDto(it.id, it.date.toString(), it.status.name, it.createdAt.toString(), it.updatedAt.toString(), it.isDeleted)
+                SessionDto(
+                    it.id, it.date.toString(), it.status.name, it.createdAt.toString(), it.updatedAt.toString(),
+                    it.isDeleted, it.handsPlayed,
+                )
             },
             entries = snapshot.entries.map {
                 SessionEntryDto(
@@ -84,6 +88,7 @@ data class DriveSnapshotDto(
                 createdAt = java.time.Instant.parse(it.createdAt),
                 updatedAt = java.time.Instant.parse(it.updatedAt),
                 isDeleted = it.isDeleted,
+                handsPlayed = it.handsPlayed,
             )
         },
         entries = entries.map {

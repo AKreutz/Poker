@@ -53,6 +53,7 @@ data class SessionResult(
     val outcomes: List<PlayerSessionOutcome>,
     val streakUpdates: List<StreakUpdate>,
     val newRecords: List<NewRecord>,
+    val handsPlayed: Int? = null,
 )
 
 fun computeSessionResult(
@@ -127,5 +128,5 @@ fun computeSessionResult(
         }
     }
 
-    return SessionResult(sessionDate, outcomes, streakUpdates, newRecords)
+    return SessionResult(sessionDate, outcomes, streakUpdates, newRecords, sessionWithEntries.session.handsPlayed)
 }
