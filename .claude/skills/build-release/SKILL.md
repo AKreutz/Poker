@@ -18,12 +18,18 @@ ready to upload," stopping right before anything gets pushed so the user can loo
 Work through the steps below in order. Each one depends on the last succeeding, so don't skip ahead
 if something fails — stop and surface the problem instead of guessing at a fix.
 
+Every question to the user in this process — including the ones below — must be asked with the
+AskUserQuestion tool (selectable options), never as a free-text prompt asking them to type a
+response. Even open-ended-sounding questions (like the version name) should be offered as a small
+set of concrete options, with a free-text "Other" always available as the fallback.
+
 ## 1. Confirm the starting state
 
-- `git status` — the working tree must be clean. If there are uncommitted changes, stop and ask
-  the user what to do with them rather than including them in the release commit.
-- Confirm the current branch is `develop` (`git branch --show-current`). If not, ask whether to
-  switch to it — the release always starts from develop.
+- `git status` — the working tree must be clean. If there are uncommitted changes, stop and use
+  AskUserQuestion to ask what to do with them (e.g. "commit them separately first" / "stash them" /
+  "include them in the release commit") rather than including them in the release commit by default.
+- Confirm the current branch is `develop` (`git branch --show-current`). If not, use
+  AskUserQuestion to ask whether to switch to it — the release always starts from develop.
 - Check that `main` can fast-forward to `develop`: `git merge-base --is-ancestor main develop`.
   If this fails, main has commits develop doesn't (or they've diverged), and a fast-forward merge
   isn't possible. Stop and tell the user — don't fall back to a merge commit or force anything;
@@ -35,9 +41,10 @@ Read `app/build.gradle.kts` and find `versionCode` and `versionName` in `default
 
 - **versionCode**: increment by 1 automatically (Play Store requires each upload to have a higher
   versionCode than the last, so there's no real judgment call here).
-- **versionName**: ask the user what it should be. Default to suggesting the next minor bump
-  (e.g. `1.0` → `1.1`) since that's this project's pattern so far, but let them override it —
-  they may want a major bump, a patch, or something else.
+- **versionName**: use AskUserQuestion to ask what it should be. Compute a next-minor-bump
+  suggestion (e.g. `1.0` → `1.1`) and list it first as the recommended option, since that's this
+  project's pattern so far, alongside a next-major-bump option (e.g. `1.0` → `2.0`); the tool's
+  built-in "Other" covers a patch bump or anything else they'd rather type in.
 
 Edit the two lines in place. Don't touch anything else in the file.
 
@@ -102,7 +109,8 @@ Summarize for the user:
 - That main was fast-forwarded to match
 - Where the AAB and APK ended up
 
-Then explicitly ask whether to push. If they say yes, push both branches:
+Then use AskUserQuestion to explicitly ask whether to push (yes/no options). If they say yes, push
+both branches:
 
 ```
 git push origin develop main
@@ -113,10 +121,10 @@ to `main` on this repo is the one step in this whole process that's genuinely ha
 
 ## 8. Offer to install the release build on the phone
 
-After the push question is resolved (regardless of whether they pushed), ask whether to install
-this release build on their physical phone. Unlike day-to-day dev/debug testing on this project —
-which is emulator-only — a finished, signed release build is exactly what the phone is for, so
-installing it there is fine.
+After the push question is resolved (regardless of whether they pushed), use AskUserQuestion to ask
+whether to install this release build on their physical phone (yes/no options). Unlike day-to-day
+dev/debug testing on this project — which is emulator-only — a finished, signed release build is
+exactly what the phone is for, so installing it there is fine.
 
 Check `adb devices` for a connected physical device (not an emulator, which shows as
 `emulator-####`). If one is connected:
