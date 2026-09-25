@@ -354,8 +354,8 @@ private fun PlayerSkillRow(summary: PlayerSkillSummary, sharedEdgeRangeCents: Cl
 
 /**
  * Renders this player's posterior edge distribution as a bell curve (Normal(meanCents, stdDevCents^2))
- * over [rangeCents], with the 90% credible interval shaded underneath and a zero-edge reference line -
- * a compact visual complement to the numeric edge/range shown above it.
+ * over [rangeCents], with the 90% credible interval shaded underneath (labeled with its width) and a
+ * zero-edge reference line - a compact visual complement to the numeric edge/range shown above it.
  */
 @Composable
 private fun EdgeDistributionCurve(
@@ -371,6 +371,13 @@ private fun EdgeDistributionCurve(
     val labelPaint = remember(gridColor) {
         android.graphics.Paint().apply {
             color = gridColor.toArgb()
+            textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true
+        }
+    }
+    val widthLabelPaint = remember(curveColor) {
+        android.graphics.Paint().apply {
+            color = curveColor.toArgb()
             textAlign = android.graphics.Paint.Align.CENTER
             isAntiAlias = true
         }
@@ -437,6 +444,20 @@ private fun EdgeDistributionCurve(
                 close()
             }
             drawPath(path = shadedPath, color = fillColor)
+
+            // Interval half-width ("+-" margin) label, centered horizontally within the shaded
+            // band and anchored near the bottom of the curve area, colored like the curve itself
+            // so it reads as belonging to that player's distribution.
+            val marginCents = ((credibleIntervalCents.endInclusive - credibleIntervalCents.start) / 2.0)
+                .roundToInt().toLong()
+            val centerX = (lowPoint.x + highPoint.x) / 2f
+            widthLabelPaint.textSize = labelHeight * 0.85f
+            drawContext.canvas.nativeCanvas.drawText(
+                "±${formatCents(marginCents)}",
+                centerX,
+                size.height - labelHeight * 0.25f,
+                widthLabelPaint,
+            )
         }
 
         val curvePath = Path().apply {
