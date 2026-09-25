@@ -49,6 +49,7 @@ import com.akreutz.poker.PokerApplication
 import com.akreutz.poker.SyncState
 import com.akreutz.poker.navigation.PokerDestination
 import com.akreutz.poker.navigation.PokerRoutes
+import com.akreutz.poker.ui.analysis.AnalysisScreen
 import com.akreutz.poker.ui.graphs.FullScreenGraphOverlay
 import com.akreutz.poker.ui.graphs.GraphsFullScreenState
 import com.akreutz.poker.ui.graphs.GraphsScreen
@@ -205,6 +206,7 @@ fun PokerApp() {
                 composable(PokerDestination.Graphs.route) {
                     GraphsScreen(onStateChanged = { graphsState = it })
                 }
+                composable(PokerDestination.Analysis.route) { AnalysisScreen() }
                 composable(PokerDestination.Sessions.route) { SessionsScreen() }
                 composable(PokerRoutes.SESSIONS_DEBUG) { SessionsDebugScreen() }
                 composable(
