@@ -87,7 +87,7 @@ import java.util.Locale
 fun CurrentSessionScreen(modifier: Modifier = Modifier) {
     val application = LocalContext.current.applicationContext as PokerApplication
     val viewModel: CurrentSessionViewModel = viewModel(
-        factory = SimpleViewModelFactory { CurrentSessionViewModel(application.repository) },
+        factory = SimpleViewModelFactory { CurrentSessionViewModel(application.repository, application.handsWonTracker) },
     )
     val openSession by viewModel.openSession.collectAsState()
     val showPlayerSelection by viewModel.showPlayerSelection.collectAsState()

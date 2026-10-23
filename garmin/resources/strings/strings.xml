@@ -1,0 +1,7 @@
+<strings>
+    <string id="AppName">Poker</string>
+    <string id="Waiting">Waiting for phone…</string>
+    <string id="Idle">No session open</string>
+    <string id="NoPhone">Phone not reachable</string>
+    <string id="HandsPlayed">Hands played</string>
+</strings>

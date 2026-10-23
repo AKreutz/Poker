@@ -3,11 +3,13 @@ package com.akreutz.poker
 import android.app.Application
 import android.util.Log
 import com.akreutz.poker.data.local.AppDatabase
+import com.akreutz.poker.data.repository.HandsWonTracker
 import com.akreutz.poker.data.repository.PokerRepository
 import com.akreutz.poker.data.sync.LocalChangeTracker
 import com.akreutz.poker.data.sync.SyncManager
 import com.akreutz.poker.data.sync.auth.GoogleAuthManager
 import com.akreutz.poker.data.sync.drive.GoogleDriveDataSource
+import com.akreutz.poker.data.watch.WatchSessionBridge
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -42,6 +44,10 @@ class PokerApplication : Application() {
             localChangeTracker,
         )
     }
+
+    val handsWonTracker by lazy { HandsWonTracker(repository) }
+
+    val watchSessionBridge by lazy { WatchSessionBridge(repository, handsWonTracker) }
 
     val authManager by lazy { GoogleAuthManager(this) }
 

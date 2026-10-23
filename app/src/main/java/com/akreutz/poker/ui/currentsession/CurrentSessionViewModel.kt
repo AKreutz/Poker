@@ -8,6 +8,7 @@ import com.akreutz.poker.data.model.SessionResult
 import com.akreutz.poker.data.model.SessionWithEntries
 import com.akreutz.poker.data.model.computePokerRecords
 import com.akreutz.poker.data.model.computeSessionResult
+import com.akreutz.poker.data.repository.HandsWonTracker
 import com.akreutz.poker.data.repository.PokerRepository
 import java.time.Instant
 import java.time.LocalDate
@@ -18,7 +19,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class CurrentSessionViewModel(private val repository: PokerRepository) : ViewModel() {
+class CurrentSessionViewModel(
+    private val repository: PokerRepository,
+    private val handsWonTracker: HandsWonTracker,
+) : ViewModel() {
     val openSession: StateFlow<SessionWithEntries?> = repository.observeOpenSession()
         .stateIn(
             scope = viewModelScope,
@@ -45,8 +49,7 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
     private val _sessionResult = MutableStateFlow<SessionResult?>(null)
     val sessionResult: StateFlow<SessionResult?> = _sessionResult.asStateFlow()
 
-    private val _recordHandsPlayed = MutableStateFlow(false)
-    val recordHandsPlayed: StateFlow<Boolean> = _recordHandsPlayed.asStateFlow()
+    val recordHandsPlayed: StateFlow<Boolean> = handsWonTracker.recordHandsPlayed
 
     fun startSession() {
         _showPlayerSelection.value = true
@@ -103,28 +106,15 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
     }
 
     fun adjustHandsWon(entry: SessionEntryEntity, delta: Int) {
-        val sessionWithEntries = openSession.value ?: return
-        val previousTotal = sessionWithEntries.handsPlayed ?: 0
-        val previousCount = entry.handsWon ?: 0
-        val newCount = previousCount + delta
-        if (newCount < 0) return
-        val newTotal = previousTotal + delta
-        if (previousTotal == 0 && newTotal > 0) {
-            // First hand recorded this session: auto-opt-in.
-            _recordHandsPlayed.value = true
-        } else if (newTotal == 0) {
-            // Back to zero: nothing to record, so opting in is meaningless.
-            _recordHandsPlayed.value = false
-        }
         viewModelScope.launch {
-            repository.updateHandsWon(entry.id, newCount)
+            handsWonTracker.adjust(entry.id, delta)
         }
     }
 
     fun setRecordHandsPlayed(record: Boolean) {
-        val handsPlayed = openSession.value?.handsPlayed ?: 0
-        if (record && handsPlayed <= 0) return
-        _recordHandsPlayed.value = record
+        viewModelScope.launch {
+            handsWonTracker.setRecordHandsPlayed(record)
+        }
     }
 
     fun concludeSession() {
@@ -141,7 +131,7 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
             val sessionsBefore = repository.getSessionsWithEntries()
             val recordsBefore = if (sessionsBefore.isEmpty()) null else computePokerRecords(sessionsBefore)
 
-            val shouldRecordHandsPlayed = _recordHandsPlayed.value
+            val shouldRecordHandsPlayed = handsWonTracker.recordHandsPlayed.value
 
             sessionWithEntries.entries.forEach { entryWithPlayer ->
                 val cashOutCents = cashOutsByEntryId[entryWithPlayer.entry.id] ?: return@forEach
@@ -153,7 +143,7 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
                 repository.clearHandsWonForSession(sessionWithEntries.session.id)
             }
             _showConcludeDialog.value = false
-            _recordHandsPlayed.value = false
+            handsWonTracker.reset()
 
             val updatedEntries = sessionWithEntries.entries.map { entryWithPlayer ->
                 val cashOutCents = cashOutsByEntryId[entryWithPlayer.entry.id] ?: entryWithPlayer.entry.cashOutCents
@@ -182,6 +172,7 @@ class CurrentSessionViewModel(private val repository: PokerRepository) : ViewMod
         val session = openSession.value?.session ?: return
         viewModelScope.launch {
             repository.cancelSession(session)
+            handsWonTracker.reset()
         }
     }
 }

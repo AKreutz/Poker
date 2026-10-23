@@ -34,9 +34,29 @@ android {
             "GOOGLE_WEB_CLIENT_ID",
             "\"484523331931-3p33qmk2l73cvgluho9a2cdo3v200iie.apps.googleusercontent.com\"",
         )
+
+        // The watch app's id from its Connect IQ manifest. Empty disables the watch connection.
+        buildConfigField("String", "GARMIN_APP_ID", "\"${localProperties.getProperty("garmin.appId", "")}\"")
+        // true talks to the Connect IQ simulator over adb instead of a real watch.
+        buildConfigField(
+            "boolean",
+            "GARMIN_USE_SIMULATOR",
+            localProperties.getProperty("garmin.useSimulator", "false"),
+        )
     }
 
     signingConfigs {
+        // Optional shared debug key, so debug builds from different machines can update each other.
+        // Without it Android's default debug keystore is used.
+        getByName("debug") {
+            val storeFilePath = localProperties.getProperty("debug.storeFile")
+            if (storeFilePath != null) {
+                storeFile = file(storeFilePath)
+                storePassword = localProperties.getProperty("debug.storePassword", "android")
+                keyAlias = localProperties.getProperty("debug.keyAlias", "androiddebugkey")
+                keyPassword = localProperties.getProperty("debug.keyPassword", "android")
+            }
+        }
         create("release") {
             val storeFilePath = localProperties.getProperty("release.storeFile")
             if (storeFilePath != null) {
@@ -117,6 +137,7 @@ dependencies {
     }
     implementation(libs.google.http.client.gson)
     implementation(libs.vico.compose.m3)
+    implementation(libs.garmin.ciq.companion.app.sdk)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
